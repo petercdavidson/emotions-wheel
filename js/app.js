@@ -22,19 +22,28 @@
   // ---------- Olympian Mode (monochrome) ----------
   $("#mono").addEventListener("change", (e) => document.documentElement.classList.toggle("mono", e.target.checked));
 
-  // ---------- First: basic needs ----------
-  $("#basics").innerHTML = BASICS.map(
-    (b) => `<label class="basic"><input type="checkbox"> <span>${esc(b)}</span></label>`
-  ).join("");
-  const basicBoxes = $$("#basics input");
-  basicBoxes.forEach((cb) =>
-    cb.addEventListener("change", () => ($("#gate-go").disabled = !basicBoxes.every((b) => b.checked)))
-  );
-  $("#gate-go").addEventListener("click", () => {
-    $("#gate").hidden = true;
-    $("#app").hidden = false;
-    window.scrollTo(0, 0);
-  });
+  // ---------- First: basic needs (pop-up with a short countdown) ----------
+  $("#basics").innerHTML = BASICS.map((b) => `<li>${esc(b)}?</li>`).join("");
+  (function countdown() {
+    const go = $("#gate-go");
+    let n = 5;
+    const tick = () => {
+      if (n > 0) {
+        go.textContent = `Continue in ${n}…`;
+        n--;
+        setTimeout(tick, 1000);
+      } else {
+        go.textContent = "I've checked. Continue";
+        go.disabled = false;
+        go.focus();
+      }
+    };
+    tick();
+    go.addEventListener("click", () => {
+      $("#gate").hidden = true;
+      $(".page").inert = false;
+    });
+  })();
 
   // ---------- State ----------
   const blankThought = () => ({ feeling: "", connected: "", body: "", action: "" });
@@ -55,12 +64,23 @@
   function pick(id, which) {
     which = which || (state.cantGive ? state.active : "primary");
     const s = state[which];
-    const prev = s.id ? BY_ID[s.id].word.toLowerCase() : "";
-    if (!s.f.feeling.trim() || s.f.feeling.trim().toLowerCase() === prev) s.f.feeling = BY_ID[id].word.toLowerCase();
+    // Autofill the first three parts, unless you've typed your own words there.
+    const before = s.id ? autofill(s.id) : {};
+    const after = autofill(id);
+    for (const k of Object.keys(after)) {
+      const cur = s.f[k].trim().toLowerCase();
+      if (!cur || cur === (before[k] || "").toLowerCase()) s.f[k] = after[k];
+    }
     s.id = id;
     state.active = which;
     showActiveOnWheel();
     renderPanel();
+  }
+
+  const ROOT_NOUN = { Anger: "anger", Disgust: "disgust", Sad: "sadness", Happy: "happiness", Surprise: "surprise", Fear: "fear" };
+  function autofill(id) {
+    const n = BY_ID[id];
+    return { feeling: n.word.toLowerCase(), connected: ROOT_NOUN[n.core], body: CORE[n.core].wants };
   }
 
   function showActiveOnWheel() {
@@ -136,8 +156,10 @@
   const panel = $("#panel");
 
   function sentence(f) {
-    const b = (v) => (v && v.trim() ? v.trim().replace(/[.,;]+$/, "") : "___");
-    return `I'm feeling ${b(f.feeling)}, it's connected to ${b(f.connected)}, my body needs ${b(f.body)}, and this is what I'm going to do about it: ${b(f.action)}.`;
+    const b = (v) => (v && v.trim() ? v.trim().replace(/[.,;:]+$/, "") : "___");
+    const a = f.action ? f.action.trim() : "";
+    const action = a ? (a[0].toUpperCase() + a.slice(1)).replace(/([^.!?])$/, "$1.") : "___.";
+    return `I'm feeling ${b(f.feeling)}. This is connected to ${b(f.connected)}. My body needs ${b(f.body)}. ${action}`;
   }
 
   function fullText() {
@@ -151,9 +173,9 @@
 
   const FIELDS = [
     ["feeling", "I'm feeling…"],
-    ["connected", "It's connected to…"],
+    ["connected", "This is connected to…"],
     ["body", "My body needs…"],
-    ["action", "This is what I'm going to do about it:"],
+    ["action", "What I'm going to do about it:"],
   ];
 
   function emotionCard(which) {
@@ -295,7 +317,7 @@
     }
     if (e.target.id === "copy") copyText(fullText());
     if (e.target.id === "start-over") {
-      const typed = ["primary", "secondary"].some((w) => Object.values(state[w].f).some((v, i) => i > 0 && v.trim()));
+      const typed = ["primary", "secondary"].some((w) => state[w].f.action.trim());
       if (typed && !confirm("Clear everything and start over?")) return;
       resetState();
       wheel.setHighlight([]);

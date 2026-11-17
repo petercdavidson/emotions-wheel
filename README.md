@@ -15,10 +15,10 @@ An interactive emotions wheel and daily check-in, for building a richer vocabula
 
 ## Features
 
-- A basics check first: tired, hungry, thirsty, triggered.
+- A pop-up first: tired, hungry, thirsty, triggered? Meet these needs first, if possible. (A short countdown runs before you can continue.)
 - Tap a word on the wheel and the wheel turns to bring it to the right-hand side. Drag the outer edge to spin it.
 - If you tap an inner-ring word, the page suggests more specific words.
-- Fill-in-the-blank fields build the whole thought ("I'm feeling ___, it's connected to ___, my body needs ___, and this is what I'm going to do about it: ___"), with a Copy button.
+- Fill-in-the-blank fields build the whole thought ("I'm feeling ___. This is connected to ___. My body needs ___." followed by what you'll do about it). The first three fill in automatically from the word you tap, with a Copy button.
 - "I can't give this emotion what it wants right now" opens a second set of fields for a secondary emotion.
 - Olympian Mode: shows everything in monochrome.
 - The "Ideas" lists are general suggestions written for this site, not therapeutic guidance, and are labeled that way.

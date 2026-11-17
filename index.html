@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div class="page">
+  <div class="page" inert>
     <header class="site-header">
       <h1>Emotions Wheel</h1>
       <p class="tagline">Each emotion is asking for something.</p>
@@ -18,16 +18,8 @@
     </header>
 
     <main>
-      <!-- First: basic needs -->
-      <section id="gate" class="gate card">
-        <h2>First: tired, hungry, thirsty, triggered?</h2>
-        <p>These needs have to be met first, if possible.</p>
-        <div class="basics" id="basics"></div>
-        <button class="btn primary" id="gate-go" disabled>Continue to the wheel</button>
-      </section>
-
       <!-- The wheel -->
-      <section id="app" hidden>
+      <section id="app">
         <div class="wheel-layout">
           <div class="wheel-col">
             <div class="search">
@@ -54,7 +46,7 @@
             <ul id="wants-list"></ul>
             <p>If you can't give it what it wants, what's left? Is there a secondary emotion you're feeling that you can tend to as well?</p>
             <p>Tired, hungry, thirsty, triggered: these needs have to be met first, if possible.</p>
-            <p>Complete the whole thought: <em>I'm feeling this, it's connected to this, my body needs this, and this is what I'm going to do about it.</em></p>
+            <p>Complete the whole thought: <em>I'm feeling this. This is connected to this. My body needs this. And this is what I'm going to do about it.</em></p>
             <p>Say it out loud. Say it out loud into a mirror.</p>
             <p>This is a life tool, not a crisis tool. Practice it every day.</p>
           </div>
@@ -66,6 +58,16 @@
       <p>Nothing you type here is saved or sent anywhere. Closing or reloading the page clears it.</p>
       <p>Not a crisis tool. In a crisis in the US, call or text 988.</p>
     </footer>
+  </div>
+
+  <!-- First: basic needs. Shown on every page load. -->
+  <div id="gate" class="gate-overlay">
+    <div class="gate card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+      <h2 id="gate-title">Before you start, are you…</h2>
+      <ul class="basics" id="basics"></ul>
+      <p class="gate-ask">These needs have to be met first, if possible.</p>
+      <button class="btn primary" id="gate-go" disabled>Continue</button>
+    </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
