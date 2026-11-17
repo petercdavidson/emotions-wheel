@@ -15,22 +15,17 @@ An interactive emotions wheel and daily check-in, for building a richer vocabula
 
 ## Features
 
-- **Wheel**: tap any word to see where it sits (core › middle › outer), what its core emotion is asking for, and ideas for meeting that need. You can search for a word or browse the wheel as a list.
-- **Daily check-in**: a step-by-step version of the daily practice:
-  1. Body check (tired, hungry, thirsty, triggered?)
-  2. Write your own words for the day *before* you look at the wheel
-  3. Consult the wheel and see if your words match
-  4. What is each emotion asking for? Can you give it that? If not, what's left?
-  5. Complete the whole thought: *"I'm feeling ___, I know it's connected to ___, my body needs ___, and this is what I'm going to do about it."*
-  6. Say it out loud (there's an optional read-aloud button)
-- **Journal**: your past check-ins, a "bring to therapy" filter, a vocabulary tracker, and download/backup options.
-- **Guide**: the ideas behind the practice, plus a button that downloads a repeating daily calendar reminder.
+- A basics check first: tired, hungry, thirsty, triggered.
+- Tap a word on the wheel and the wheel turns to bring it to the right-hand side. Drag the outer edge to spin it.
+- If you tap an inner-ring word, the page suggests more specific words.
+- Fill-in-the-blank fields build the whole thought ("I'm feeling ___, it's connected to ___, my body needs ___, and this is what I'm going to do about it: ___"), with a Copy button.
+- "I can't give this emotion what it wants right now" opens a second set of fields for a secondary emotion.
+- Olympian Mode: shows everything in monochrome.
+- The "Ideas" lists are general suggestions written for this site, not therapeutic guidance, and are labeled that way.
 
 ## Privacy
 
-This is a static website with no server, no accounts, and no analytics. Everything you type is saved only in your own browser (`localStorage`) on your own device. The public site holds only the wheel and the guide text, never your entries.
-
-Your entries stay in the browser and on the device where you wrote them. To move them somewhere else, use **Journal → Back up**, then **Restore** on the other device. Clearing your browser data deletes them, so back up now and then.
+Nothing is saved: no accounts, no storage, no analytics. What you type exists only while the page is open, and reloading the page clears it.
 
 ## How it's built
 
@@ -41,7 +36,7 @@ index.html        the page
 css/styles.css    the look (supports light and dark mode)
 js/data.js        the wheel words, and what each emotion wants  ← edit words here
 js/wheel.js       draws the wheel
-js/app.js         tabs, check-in, journal, reminders
+js/app.js         the page's behavior
 ```
 
 To try it on your own computer, open `index.html` in a browser.

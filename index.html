@@ -4,139 +4,69 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Emotions Wheel</title>
-  <meta name="description" content="An interactive emotions wheel and daily check-in for building a richer vocabulary for your feelings.">
+  <meta name="description" content="An interactive emotions wheel for naming a feeling and what it's asking for.">
   <meta name="theme-color" content="#f7f4ec">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cpath d='M0 0L0-9A9 9 0 0 1 7.8-4.5Z' fill='%23e9a593'/%3E%3Cpath d='M0 0L7.8-4.5A9 9 0 0 1 7.8 4.5Z' fill='%23c9d39a'/%3E%3Cpath d='M0 0L7.8 4.5A9 9 0 0 1 0 9Z' fill='%2399bde0'/%3E%3Cpath d='M0 0L0 9A9 9 0 0 1-7.8 4.5Z' fill='%23efd27f'/%3E%3Cpath d='M0 0L-7.8 4.5A9 9 0 0 1-7.8-4.5Z' fill='%23d3afe0'/%3E%3Cpath d='M0 0L-7.8-4.5A9 9 0 0 1 0-9Z' fill='%2399d1b8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -10 20 20'%3E%3Cpath d='M0 0L0-9A9 9 0 0 1 7.8-4.5Z' fill='%23e9a593'/%3E%3Cpath d='M0 0L7.8-4.5A9 9 0 0 1 7.8 4.5Z' fill='%23c9d39a'/%3E%3Cpath d='M0 0L7.8 4.5A9 9 0 0 1 0 9Z' fill='%2399bde0'/%3E%3Cpath d='M0 0L0 9A9 9 0 0 1-7.8 4.5Z' fill='%23efd27f'/%3E%3Cpath d='M0 0L-7.8 4.5A9 9 0 0 1-7.8-4.5Z' fill='%2399d1b8'/%3E%3Cpath d='M0 0L-7.8-4.5A9 9 0 0 1 0-9Z' fill='%23d3afe0'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="site-header">
-    <h1>Emotions Wheel</h1>
-    <p class="tagline">Every feeling is asking for something.</p>
-    <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" data-tab="wheel" aria-selected="true">Wheel</button>
-      <button role="tab" data-tab="checkin" aria-selected="false">Check-in</button>
-      <button role="tab" data-tab="journal" aria-selected="false">Journal</button>
-      <button role="tab" data-tab="guide" aria-selected="false">Guide</button>
-    </nav>
-  </header>
+  <div class="page">
+    <header class="site-header">
+      <h1>Emotions Wheel</h1>
+      <p class="tagline">Each emotion is asking for something.</p>
+      <label class="mono-toggle"><input type="checkbox" id="mono"> Olympian Mode</label>
+    </header>
 
-  <main>
-    <!-- ============ WHEEL ============ -->
-    <section id="tab-wheel" class="tab-panel" role="tabpanel">
-      <div class="wheel-layout">
-        <div class="wheel-col">
-          <div class="search">
-            <label for="wheel-search" class="visually-hidden">Find a word</label>
-            <input id="wheel-search" type="search" list="all-words" placeholder="Find a word…" autocomplete="off">
-            <datalist id="all-words"></datalist>
-          </div>
-          <div id="main-wheel" class="wheel"></div>
-          <p class="hint">Tap any word. The center is the core emotion; the outer rings get more specific. On a phone, pinch to zoom or use the list below.</p>
-        </div>
-        <aside id="detail" class="detail card" aria-live="polite">
-          <div class="detail-empty">
-            <h2>Pick a feeling</h2>
-            <p>Tap a word on the wheel (or search for one) to see where it comes from and what it might be asking for.</p>
-            <p class="muted">Tip: try starting from the outside. The more specific the word, the easier it is to know what you need.</p>
-          </div>
-        </aside>
-      </div>
-
-      <details class="list-view card">
-        <summary>Browse as a list</summary>
-        <div id="word-list"></div>
-      </details>
-    </section>
-
-    <!-- ============ CHECK-IN ============ -->
-    <section id="tab-checkin" class="tab-panel" role="tabpanel" hidden>
-      <div class="checkin card">
-        <ol class="steps" id="step-dots" aria-label="Progress"></ol>
-        <div id="checkin-body"></div>
-        <div class="step-nav">
-          <button id="step-back" class="btn ghost">Back</button>
-          <button id="step-next" class="btn primary">Next</button>
-        </div>
-      </div>
-      <p class="muted center small">Your check-in is saved only in this browser on this device. Nothing is sent anywhere.</p>
-    </section>
-
-    <!-- ============ JOURNAL ============ -->
-    <section id="tab-journal" class="tab-panel" role="tabpanel" hidden>
-      <div class="journal-head">
-        <h2>Journal</h2>
-        <div class="journal-tools">
-          <label class="check-inline"><input type="checkbox" id="filter-therapy"> Only &ldquo;bring to therapy&rdquo;</label>
-          <button class="btn ghost small" id="export-txt">Download as text</button>
-          <button class="btn ghost small" id="export-json">Back up</button>
-          <label class="btn ghost small file-btn">Restore<input type="file" id="import-json" accept="application/json,.json"></label>
-        </div>
-      </div>
-      <div id="vocab" class="card vocab"></div>
-      <div id="journal-list"></div>
-      <p class="muted small center">Entries live only in this browser on this device. Use &ldquo;Back up&rdquo; to save a copy, and &ldquo;Restore&rdquo; to load it on another device or browser.</p>
-    </section>
-
-    <!-- ============ GUIDE ============ -->
-    <section id="tab-guide" class="tab-panel" role="tabpanel" hidden>
-      <div class="card prose">
-        <h2>Skill 1: Recognize what your emotion is asking for</h2>
-        <p>Each emotion on the wheel is asking for something — it wants something from us. When you can name the feeling, you can start to figure out what it needs.</p>
-        <div id="needs-grid" class="needs-grid"></div>
-        <h3>If you can't give it what it wants</h3>
-        <p>Sometimes we can't give an emotion what it's asking for. Then ask: <em>what's left?</em> Is there a <strong>secondary emotion</strong> underneath that I can tend to as well?</p>
-      </div>
-
-      <div class="card prose">
+    <main>
+      <!-- First: basic needs -->
+      <section id="gate" class="gate card">
         <h2>First: tired, hungry, thirsty, triggered?</h2>
-        <p>These basic needs have to be met first, if possible. It's hard to read your emotions clearly when your body is running on empty.</p>
-      </div>
+        <p>These needs have to be met first, if possible.</p>
+        <div class="basics" id="basics"></div>
+        <button class="btn primary" id="gate-go" disabled>Continue to the wheel</button>
+      </section>
 
-      <div class="card prose">
-        <h2>Complete the whole thought</h2>
-        <p>Take it all the way through — from noticing, to naming, to doing:</p>
-        <blockquote class="sentence">I'm feeling <u>this</u>, I know it's connected to <u>this</u>, my body needs <u>this</u>, and this is what I'm going to do about it.</blockquote>
-        <h3>Use more than one sense</h3>
-        <p>Give yourself multiple pathways of understanding. Write it down. Then <strong>say it out loud</strong> — and if you can, say it out loud into a mirror.</p>
-      </div>
-
-      <div class="card prose">
-        <h2>Daily practice</h2>
-        <ol>
-          <li>Pick a reflective time of day — a transition time works well (like after work, or before bed).</li>
-          <li><strong>Without looking at the wheel</strong>, write down some words for how you felt during the day.</li>
-          <li>Then consult the wheel. Do the words match your experience? Is there a more accurate word?</li>
-          <li>Complete the whole thought: what I'm feeling, and what I'm going to do about it.</li>
-        </ol>
-        <p>The <a href="#checkin">Daily check-in</a> walks you through these steps.</p>
-
-        <h3>Set a recurring reminder</h3>
-        <p>Choose a time, then download a calendar reminder that repeats every day. Open the file on your phone or computer to add it to your calendar.</p>
-        <div class="reminder">
-          <label>Time <input type="time" id="reminder-time" value="18:00"></label>
-          <button class="btn primary" id="reminder-download">Download daily reminder</button>
+      <!-- The wheel -->
+      <section id="app" hidden>
+        <div class="wheel-layout">
+          <div class="wheel-col">
+            <div class="search">
+              <label for="wheel-search" class="visually-hidden">Find a word</label>
+              <input id="wheel-search" type="search" list="all-words" placeholder="Find a word…" autocomplete="off">
+              <datalist id="all-words"></datalist>
+            </div>
+            <div id="choosing" class="choosing" hidden></div>
+            <div id="main-wheel" class="wheel"></div>
+            <p class="hint"><span aria-hidden="true">↻</span> Drag the outer edge to spin the wheel.</p>
+          </div>
+          <div id="panel" class="panel" aria-live="polite"></div>
         </div>
-        <p class="muted small">Prefer a phone alarm? Set a repeating alarm labeled &ldquo;Emotions check-in&rdquo; for the same time.</p>
-      </div>
 
-      <div class="card prose">
-        <h2>Why build a bigger vocabulary?</h2>
-        <p>Many of us were treated as kids as if our emotional range was small — happy or sad, good or bad. So we often reach adulthood with a limited vocabulary for our own feelings. Part of this practice is building a more accurate vocabulary to describe what we actually experience.</p>
-        <p>The Journal tab keeps track of the words you've used, so you can watch your vocabulary grow.</p>
-      </div>
+        <details class="card fold">
+          <summary>Browse as a list</summary>
+          <div id="word-list"></div>
+        </details>
 
-      <div class="card prose note">
-        <h2>A life tool, not a crisis tool</h2>
-        <p>This is something to practice every day, in ordinary moments, so it's there when you need it. It isn't meant for a crisis.</p>
-        <p>If you're in crisis or thinking about harming yourself, please reach out for support right away. In the US, call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline). Elsewhere, contact your local emergency number.</p>
-      </div>
-    </section>
-  </main>
+        <details class="card fold">
+          <summary>About this practice</summary>
+          <div class="prose">
+            <p>Each emotion on the wheel is asking for something:</p>
+            <ul id="wants-list"></ul>
+            <p>If you can't give it what it wants, what's left? Is there a secondary emotion you're feeling that you can tend to as well?</p>
+            <p>Tired, hungry, thirsty, triggered: these needs have to be met first, if possible.</p>
+            <p>Complete the whole thought: <em>I'm feeling this, it's connected to this, my body needs this, and this is what I'm going to do about it.</em></p>
+            <p>Say it out loud. Say it out loud into a mirror.</p>
+            <p>This is a life tool, not a crisis tool. Practice it every day.</p>
+          </div>
+        </details>
+      </section>
+    </main>
 
-  <footer class="site-footer">
-    <p>Your entries never leave this device. Made as a personal practice tool — not a substitute for professional care.</p>
-  </footer>
+    <footer class="site-footer">
+      <p>Nothing you type here is saved or sent anywhere. Closing or reloading the page clears it.</p>
+      <p>Not a crisis tool. In a crisis in the US, call or text 988.</p>
+    </footer>
+  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

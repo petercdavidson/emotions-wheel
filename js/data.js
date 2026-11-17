@@ -61,7 +61,7 @@ const WHEEL = [
   {
     name: "Surprise",
     wants: "time",
-    hue: 285,
+    hue: 160,
     children: [
       ["Excited", ["Energetic", "Eager"]],
       ["Amazed", ["Awe", "Astonished"]],
@@ -72,7 +72,7 @@ const WHEEL = [
   {
     name: "Fear",
     wants: "information",
-    hue: 160,
+    hue: 285,
     children: [
       ["Scared", ["Terrified", "Frightened"]],
       ["Anxious", ["Overwhelmed", "Worried"]],
@@ -84,74 +84,61 @@ const WHEEL = [
   },
 ];
 
-// What each core emotion is asking for, and ideas for giving it that.
+// Guidance for each core emotion.
+//   guidance / ifNot: taken directly from the practice as taught. Leave null when nothing was given.
+//   ideas: general suggestions written for this site. These are interpretations, not guidance,
+//          and are shown only behind an "Ideas" button with a label saying so.
 const NEEDS = {
   Happy: {
-    wants: "to be shared",
+    guidance: null,
+    ifNot: null,
     ideas: [
-      "Tell someone about it — a text, a call, a hug.",
-      "Write it down so you can come back to it later.",
-      "Pause and savor it for a moment before moving on.",
+      "Tell someone about it.",
+      "Write it down.",
     ],
-    ifNot:
-      "If there's no one to share it with right now, share it with yourself: write it down, or say it out loud.",
   },
   Sad: {
-    wants: "comfort",
+    guidance: null,
+    ifNot: null,
     ideas: [
       "Reach out to someone who feels safe.",
-      "Offer yourself comfort: a blanket, a warm drink, a kind word to yourself.",
-      "Let yourself feel it without rushing it away.",
+      "Find a small way to comfort yourself.",
     ],
-    ifNot:
-      "If comfort isn't available from others right now, what's one small way you could comfort yourself?",
   },
   Disgust: {
-    wants: "space",
+    guidance: null,
+    ifNot: null,
     ideas: [
-      "Step away — physically or mentally — from what's bothering you.",
-      "Set or restate a boundary.",
-      "Give yourself a little distance before deciding what to do.",
+      "Step away from what's bothering you, physically or mentally.",
+      "Take a little distance before deciding what to do.",
     ],
-    ifNot:
-      "If you can't get physical space, can you find a little mental space — a short walk, a few breaths, a break?",
   },
   Anger: {
-    wants: "change",
+    guidance: null,
+    ifNot:
+      "Radical acceptance: accept that change isn't an option, and validate that the anger wants change.",
     ideas: [
       "Name the specific thing that needs to change.",
-      "Ask: is this change within my control?",
-      "If it is, what's one step toward that change?",
+      "Ask whether that change is within your control.",
     ],
-    ifNot:
-      "If change isn't an option, practice radical acceptance: accept that this can't change right now, and validate that the anger wants change. Both can be true.",
   },
   Fear: {
-    wants: "information",
+    guidance: "Get information, and make a plan.",
+    ifNot: "If you're still stuck, write it down and bring it to your therapist.",
     ideas: [
-      "What do you need to know? Go get the information.",
-      "Make a plan based on what you find out.",
+      "Write down what you need to know.",
       "Separate what you know from what you're imagining.",
     ],
-    ifNot:
-      "If you're still stuck after gathering information and making a plan, write it down and bring it to your therapist.",
   },
   Surprise: {
-    wants: "time",
+    guidance: null,
+    ifNot: null,
     ideas: [
-      "Give yourself time to take it in before reacting.",
-      "It's okay to say “I need a minute.”",
-      "Come back to it once things have settled.",
+      "Give yourself a moment before reacting.",
+      "Come back to it later, once things have settled.",
     ],
-    ifNot:
-      "If you can't take time right now, can you set aside a little time later to process it?",
   },
 };
 
 // The basic needs to check before anything else.
-const BASICS = [
-  { id: "tired", label: "Tired", need: "rest" },
-  { id: "hungry", label: "Hungry", need: "food" },
-  { id: "thirsty", label: "Thirsty", need: "water" },
-  { id: "triggered", label: "Triggered", need: "safety and grounding" },
-];
+const BASICS = ["Tired", "Hungry", "Thirsty", "Triggered"];
