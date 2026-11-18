@@ -293,7 +293,9 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 
 .check-inline { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
 .check-inline input { width: 18px; height: 18px; margin-top: 3px; flex: none; }
-.cant { border-top: 1px solid var(--soft-line); margin-top: 16px; padding-top: 14px; font-weight: 600; }
+.cant { margin: 6px 0 10px; font-weight: 600; align-items: center; }
+.cant .or { font-weight: 400; color: var(--muted); font-style: italic; margin-right: 2px; }
+.cant input { margin-top: 0; }
 
 .copy h3 { margin: 0 0 4px; }
 .sentence {

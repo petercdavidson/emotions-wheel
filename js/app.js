@@ -112,8 +112,8 @@
       active: "primary", // which emotion a tap on the wheel sets
       cantGive: false,
       wantsSecondary: null, // answer to "is there a secondary emotion?": null (unanswered), true or false
-      primary: { id: null, action: "" },
-      secondary: { id: null, action: "" },
+      primary: { id: null, action: "", cant: false },
+      secondary: { id: null, action: "", cant: false },
     };
   }
   resetState();
@@ -147,14 +147,19 @@
       state.cantGive = false;
       dropSecondary();
     }
+    if (which === "secondary" && prev && BY_ID[prev].core !== BY_ID[id].core) state.secondary.cant = false;
     state[which].id = id;
     state.active = which;
     showActiveOnWheel();
     renderPanel();
   }
 
+  // "I can't give this emotion what it wants": the main emotion's lives in state.cantGive
+  // (it opens the secondary-emotion flow); the secondary's lives on the secondary itself.
+  const cantOf = (which) => (which === "primary" ? state.cantGive : state.secondary.cant);
+
   function dropSecondary() {
-    state.secondary = { id: null, action: "" };
+    state.secondary = { id: null, action: "", cant: false };
     state.wantsSecondary = null;
     state.active = "primary";
   }
@@ -223,7 +228,7 @@
       state.wantsSecondary = true;
       state.active = "secondary";
     } else {
-      state.secondary = { id: null, action: "" };
+      state.secondary = { id: null, action: "", cant: false };
       state.wantsSecondary = false;
       state.active = "primary";
     }
@@ -293,11 +298,15 @@
     return t;
   }
 
+  function part(which) {
+    const cant = cantOf(which);
+    let t = sentence(which, { withAction: !cant });
+    if (cant) t += `\n\nI can't give my ${ROOT_NOUN[BY_ID[state[which].id].core]} what it wants right now.`;
+    return t;
+  }
   function fullText() {
-    if (!state.cantGive) return sentence("primary");
-    let t = sentence("primary", { withAction: false });
-    t += `\n\nI can't give ${ROOT_NOUN[BY_ID[state.primary.id].core]} what it wants right now.`;
-    if (state.secondary.id) t += `\n\nSecondary emotion: ${sentence("secondary")}`;
+    let t = part("primary");
+    if (state.cantGive && state.secondary.id) t += `\n\nSecondary emotion: ${part("secondary")}`;
     return t;
   }
 
@@ -313,7 +322,8 @@
     const path = pathOf(n.id);
     const others = nodesForWord(n.word).filter((o) => o.id !== n.id);
     const kids = childrenOf(n.id);
-    const showAction = !(which === "primary" && state.cantGive);
+    const cant = cantOf(which);
+    const showAction = !cant;
     return `
     <article class="card emo ${state.active === which ? "active" : ""}" data-which="${which}" style="--h:${core.hue}">
       ${which === "secondary" ? `<div class="emo-label">Secondary emotion</div>` : ""}
@@ -349,8 +359,16 @@
         ${
           showAction
             ? `<label class="field">What I'm going to do about it:
-                <textarea rows="2" data-action placeholder="e.g. I'm going to…">${esc(s.action)}</textarea></label>
-              <details class="ideas">
+                <textarea rows="2" data-action placeholder="e.g. I'm going to…">${esc(s.action)}</textarea></label>`
+            : ""
+        }
+        <label class="check-inline cant" ${s.action.trim() ? "hidden" : ""}>
+          ${showAction ? `<span class="or">or</span>` : ""}
+          <input type="checkbox" data-cant ${cant ? "checked" : ""}>
+          <span>I can't give this emotion what it wants right now</span></label>
+        ${
+          showAction
+            ? `<details class="ideas">
                 <summary><span aria-hidden="true">?</span> Ideas</summary>
                 <p class="ideas-note">General suggestions written for this site. These are interpretations, not therapeutic guidance.</p>
                 <ul>${need.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>
@@ -358,12 +376,6 @@
             : ""
         }
       </div>
-      ${
-        which === "primary"
-          ? `<label class="check-inline cant"><input type="checkbox" id="cant-give" ${state.cantGive ? "checked" : ""}>
-              I can't give this emotion what it wants right now</label>`
-          : ""
-      }
     </article>`;
   }
 
@@ -387,11 +399,12 @@
   }
   // Always last in the stack while "I can't give…" is checked.
   function leftoverCard() {
-    const need = NEEDS[BY_ID[state.primary.id].core];
+    const cores = ["primary", "secondary"].filter((w) => state[w].id && cantOf(w)).map((w) => BY_ID[state[w].id].core);
+    const notes = [...new Set(cores)].map((c) => NEEDS[c].ifNot).filter(Boolean);
     return `
     <section class="card leftover">
       <h3>What's left?</h3>
-      ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
+      ${notes.map((x) => `<p class="guidance">${esc(x)}</p>`).join("")}
       <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
     </section>`;
   }
@@ -399,7 +412,7 @@
   // An emotion's part is done once its action is written (or, for the
   // main emotion, once "I can't give…" is checked).
   function thoughtDone(which) {
-    return !!state[which].action.trim() || (which === "primary" && state.cantGive);
+    return !!state[which].action.trim() || cantOf(which);
   }
   // The whole thought only appears once it says more than the emotion box does.
   function showWhole() {
@@ -438,6 +451,7 @@
     state[which].action = e.target.value;
     $("#full-text").textContent = fullText();
     $(".cta", card).hidden = thoughtDone(which);
+    $(".cant", card).hidden = !!e.target.value.trim(); // typing a solution replaces the "can't" option
     $(".copy").hidden = !showWhole();
   });
 
@@ -450,7 +464,12 @@
   panel.addEventListener("click", activate); // not pointerdown: that also fires when a scroll starts
 
   panel.addEventListener("change", (e) => {
-    if (e.target.id !== "cant-give") return;
+    if (!e.target.hasAttribute("data-cant")) return;
+    if (e.target.closest(".emo").dataset.which === "secondary") {
+      state.secondary.cant = e.target.checked;
+      renderPanel();
+      return;
+    }
     state.cantGive = e.target.checked;
     if (!state.cantGive) {
       dropSecondary();
