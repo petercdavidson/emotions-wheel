@@ -87,7 +87,7 @@ const WHEEL = [
 // Guidance for each core emotion.
 //   guidance / ifNot: taken directly from the practice as taught. Leave null when nothing was given.
 //   ideas: general suggestions written for this site. These are interpretations, not guidance,
-//          and are shown only behind an "Ideas" button with a label saying so.
+//          and are shown only behind an "Ideas" button.
 const NEEDS = {
   Happy: {
     needsPrefix: "This emotion needs", // reads better than "My body needs to be shared"

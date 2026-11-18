@@ -21,7 +21,7 @@ An interactive emotions wheel and daily check-in, for building a richer vocabula
 - Fill-in-the-blank fields build the whole thought ("I'm feeling ___. This is connected to ___. My body needs ___." followed by what you'll do about it). The first three fill in automatically from the word you tap, with a Copy button.
 - "I can't give this emotion what it wants right now" opens a second set of fields for a secondary emotion.
 - Olympian Mode (bottom of the page): monochrome, with an unshaded wheel like the original graphic.
-- The "Ideas" lists are general suggestions written for this site, not therapeutic guidance, and are labeled that way.
+- The "Ideas" lists are general suggestions written for this site, not therapeutic guidance. They sit behind an "Ideas" button.
 
 ## Privacy
 

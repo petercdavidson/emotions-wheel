@@ -391,7 +391,6 @@
           showAction
             ? `<details class="ideas">
                 <summary><span aria-hidden="true">?</span> Ideas</summary>
-                <p class="ideas-note">General suggestions written for this site. These are interpretations, not therapeutic guidance.</p>
                 <ul>${need.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>
               </details>`
             : ""
