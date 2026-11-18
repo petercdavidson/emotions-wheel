@@ -111,6 +111,7 @@
     state = {
       active: "primary", // which emotion a tap on the wheel sets
       cantGive: false,
+      wantsSecondary: null, // answer to "is there a secondary emotion?": null (unanswered), true or false
       primary: { id: null, action: "" },
       secondary: { id: null, action: "" },
     };
@@ -121,7 +122,7 @@
   const wheel = createWheel($("#main-wheel"), { onPick: (n) => tapWheel(n.id) });
 
   function whichForWheel() {
-    return state.cantGive ? state.active : "primary";
+    return state.cantGive && state.wantsSecondary ? state.active : "primary";
   }
 
   // Tapping a slice that's already selected deselects it (back to its parent).
@@ -144,12 +145,18 @@
     const prev = state[which].id;
     if (which === "primary" && prev && BY_ID[prev].core !== BY_ID[id].core && state.cantGive) {
       state.cantGive = false;
-      state.secondary = { id: null, action: "" };
+      dropSecondary();
     }
     state[which].id = id;
     state.active = which;
     showActiveOnWheel();
     renderPanel();
+  }
+
+  function dropSecondary() {
+    state.secondary = { id: null, action: "" };
+    state.wantsSecondary = null;
+    state.active = "primary";
   }
 
   function clear(which) {
@@ -184,8 +191,9 @@
   // Shows which emotion a tap on the wheel will set (only when there are two).
   function renderChoosing() {
     const box = $("#choosing");
-    box.hidden = !state.cantGive;
-    if (!state.cantGive) return;
+    const show = state.cantGive && state.wantsSecondary;
+    box.hidden = !show;
+    if (!show) return;
     const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "none");
     box.innerHTML = `<span class="small">Emotion:</span>
       <div class="seg" role="group" aria-label="Which emotion the wheel selects">
@@ -308,7 +316,7 @@
           : ""
       }
       <div class="thought">
-        <h3 class="cta" ${thoughtDone(which) ? "hidden" : ""}>Complete the whole thought</h3>
+        <h3 class="cta" ${thoughtDone(which) ? "hidden" : ""}>Complete the whole thought:</h3>
         <p class="given">I'm feeling <strong>${esc(p.feeling)}</strong>.</p>
         ${p.connected ? `<p class="given">This is connected to <strong>${esc(p.connected)}</strong>.</p>` : ""}
         <p class="needs">${esc(p.needsPrefix)} <strong>${esc(p.body)}</strong>.</p>
@@ -326,6 +334,11 @@
         }
       </div>
       ${
+        which === "secondary"
+          ? `<div class="btn-row"><button class="btn ghost" id="remove-secondary">Remove secondary emotion</button></div>`
+          : ""
+      }
+      ${
         which === "primary"
           ? `<label class="check-inline cant"><input type="checkbox" id="cant-give" ${state.cantGive ? "checked" : ""}>
               I can't give this emotion what it wants right now</label>`
@@ -339,19 +352,26 @@
   // the closing notes remain, and they move below the whole thought.
   function leftoverCard() {
     const need = NEEDS[BY_ID[state.primary.id].core];
+    const ans = state.wantsSecondary;
     return `
     <section class="card leftover">
       <h3>What's left?</h3>
-      <p>If you can't give the emotion what it wants, is there a secondary emotion you're feeling that you can tend to as well?</p>
-      <button class="btn primary" id="choose-secondary">Select a secondary emotion on the wheel</button>
+      <p>If you can't give the emotion what it wants, is there a <strong>secondary emotion</strong> you're feeling that you can tend to as well?</p>
+      <div class="btn-row yes-no" role="group" aria-label="Is there a secondary emotion?">
+        <button class="btn ${ans === true ? "primary" : "ghost"}" data-secondary="yes" aria-pressed="${ans === true}">Yes</button>
+        <button class="btn ${ans === false ? "primary" : "ghost"}" data-secondary="no" aria-pressed="${ans === false}">No</button>
+      </div>
+      ${ans === true ? `<p class="pick-prompt">Select a secondary emotion on the wheel.</p>` : ""}
       ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
       <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
     </section>`;
   }
+  // Once a secondary emotion is added, the rest of "What's left?" moves below the whole thought.
   function leftoverNotes() {
     const need = NEEDS[BY_ID[state.primary.id].core];
     return `
     <section class="card leftover">
+      <h3>What's left?</h3>
       ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
       <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
     </section>`;
@@ -414,8 +434,7 @@
     if (e.target.id !== "cant-give") return;
     state.cantGive = e.target.checked;
     if (!state.cantGive) {
-      state.secondary = { id: null, action: "" };
-      state.active = "primary";
+      dropSecondary();
       showActiveOnWheel();
     }
     renderPanel();
@@ -427,11 +446,28 @@
       pick(p.dataset.pick, p.closest(".emo").dataset.which);
       return;
     }
-    if (e.target.id === "choose-secondary") {
-      state.active = "secondary";
+    const yn = e.target.closest("[data-secondary]");
+    if (yn) {
+      if (yn.dataset.secondary === "yes") {
+        state.wantsSecondary = true;
+        state.active = "secondary";
+        showActiveOnWheel();
+        renderPanel();
+        if (isPhone()) $("#choosing").scrollIntoView({ behavior: "smooth", block: "start" });
+        toast("Select a secondary emotion on the wheel");
+      } else {
+        state.wantsSecondary = false;
+        state.active = "primary";
+        showActiveOnWheel();
+        renderPanel();
+      }
+      return;
+    }
+    if (e.target.id === "remove-secondary") {
+      dropSecondary();
       showActiveOnWheel();
-      if (isPhone()) $("#choosing").scrollIntoView({ behavior: "smooth", block: "start" });
-      toast("Select a secondary emotion on the wheel");
+      renderPanel();
+      return;
     }
     if (e.target.id === "copy") copyText(fullText());
     if (e.target.id === "start-over") {
