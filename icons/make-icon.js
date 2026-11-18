@@ -14,7 +14,7 @@ function sector(r1, r2, a1, a2) {
   return `M${x1} ${y1}A${r2} ${r2} 0 ${L} 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 ${L} 0 ${x4} ${y4}Z`;
 }
 function wheel(R) {
-  const rings = [[0, R * 0.36, 70], [R * 0.36, R * 0.68, 70], [R * 0.68, R, 70]]; // one solid color per slice
+  const rings = [[0, R, 70]]; // one solid piece per slice
   let s = '', a = -40;
   const lines = [];
   for (const [, h, w] of CORES) {
@@ -23,8 +23,6 @@ function wheel(R) {
     a += w;
   }
   const ink = '#2b2a27', sw = R * 0.035;
-  s += `<circle r="${R * 0.36}" fill="none" stroke="${ink}" stroke-width="${sw * 0.6}"/>`;
-  s += `<circle r="${R * 0.68}" fill="none" stroke="${ink}" stroke-width="${sw * 0.6}"/>`;
   for (const d of lines) { const [x, y] = pt(R, d); s += `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round"/>`; }
   s += `<circle r="${R}" fill="none" stroke="${ink}" stroke-width="${sw * 1.4}"/>`;
   return s;
