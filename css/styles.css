@@ -260,10 +260,9 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .thought h3 { margin: 6px 0 10px; font-size: 1.05rem; }
 .given { margin: 4px 0; color: var(--muted); }
 .given strong { color: var(--ink); }
-.needs {
-  margin: 12px 0 10px; font-size: 1.3rem; padding: 10px 14px; border-radius: 10px;
-  background: hsl(var(--h) 55% 50% / .14); border-left: 5px solid hsl(var(--h) 50% 55%);
-}
+.needs { margin: 10px 0; font-size: 1.3rem; }
+.thought .cta { color: hsl(var(--h) 55% 38%); font-size: 1.15rem; }
+.dark .thought .cta { color: hsl(var(--h) 60% 72%); }
 .field textarea::placeholder { color: var(--muted); opacity: .7; }
 .leftover h3 { margin: 0 0 6px; }
 .leftover p { margin: 8px 0; }

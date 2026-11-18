@@ -227,6 +227,27 @@ function createWheel(container, { onPick }) {
     };
     anim = requestAnimationFrame(step);
   }
+  // Inertia: after a flick, keep turning and slow down gradually.
+  function coast(samples) {
+    if (!samples || samples.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const a = samples[0];
+    const b = samples[samples.length - 1];
+    if (performance.now() - b.t > 60) return; // stopped before letting go
+    let v = (b.rot - a.rot) / Math.max(b.t - a.t, 1); // degrees per millisecond
+    v = Math.max(-2, Math.min(2, v));
+    if (Math.abs(v) < 0.05) return;
+    let last = performance.now();
+    const step = (now) => {
+      const dt = Math.min(now - last, 40);
+      last = now;
+      setRot(rot + v * dt);
+      v *= Math.exp(-dt / 450); // friction
+      if (Math.abs(v) > 0.01) anim = requestAnimationFrame(step);
+    };
+    cancelAnimationFrame(anim);
+    anim = requestAnimationFrame(step);
+  }
+
   function focus(id) {
     const n = BY_ID[id];
     if (!n) return;
@@ -263,6 +284,7 @@ function createWheel(container, { onPick }) {
 
   svg.addEventListener("pointerdown", (e) => {
     if (e.button > 0) return;
+    cancelAnimationFrame(anim); // grabbing the wheel stops it
     const p = local(e);
     // On touch, the edge spins the wheel, but only while nothing is selected.
     // With a selection, a touch on the edge is left alone so the page can scroll.
@@ -304,7 +326,13 @@ function createWheel(container, { onPick }) {
       // Resist: follow the drag only a little, like pulling against a spring.
       down.pull = (down.pull || 0) + d;
       setRot(home + 14 * Math.tanh(down.pull / 40));
-    } else setRot(rot + d);
+    } else {
+      setRot(rot + d);
+      // Remember recent movement so a flick keeps the wheel spinning.
+      const now = performance.now();
+      down.samples = (down.samples || []).filter((x) => now - x.t < 100);
+      down.samples.push({ t: now, rot });
+    }
   });
 
   svg.addEventListener("pointerup", (e) => {
@@ -314,6 +342,7 @@ function createWheel(container, { onPick }) {
     else if (!down.moved) chosen = down.node;
     const wasMouse = down.mode === "mouse";
     if (down.moved && locked) animateTo(home, true);
+    else if (down.moved) coast(down.samples);
     down = null;
     svg.classList.remove("spinning");
     showReadout(null);

@@ -187,12 +187,12 @@
     box.hidden = !state.cantGive;
     if (!state.cantGive) return;
     const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "none");
-    box.innerHTML = `<span class="small">Wheel selects:</span>
+    box.innerHTML = `<span class="small">Emotion:</span>
       <div class="seg" role="group" aria-label="Which emotion the wheel selects">
         ${["primary", "secondary"]
           .map(
             (w) => `<button data-set-active="${w}" aria-pressed="${state.active === w}">
-              ${w === "primary" ? "Emotion" : "Secondary"}<span class="seg-sub">${esc(label(w))}</span></button>`
+              ${w === "primary" ? "Primary" : "Secondary"}<span class="seg-sub">${esc(label(w))}</span></button>`
           )
           .join("")}
       </div>`;
@@ -231,6 +231,7 @@
     const b = e.target.closest("[data-node]");
     if (!b) return;
     pick(b.dataset.node);
+    b.closest("details").open = false; // back to the exercise
     $("#main-wheel").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
@@ -307,7 +308,7 @@
           : ""
       }
       <div class="thought">
-        <h3>Complete the whole thought</h3>
+        <h3 class="cta" ${thoughtDone(which) ? "hidden" : ""}>Complete the whole thought</h3>
         <p class="given">I'm feeling <strong>${esc(p.feeling)}</strong>.</p>
         ${p.connected ? `<p class="given">This is connected to <strong>${esc(p.connected)}</strong>.</p>` : ""}
         <p class="needs">${esc(p.needsPrefix)} <strong>${esc(p.body)}</strong>.</p>
@@ -333,21 +334,37 @@
     </article>`;
   }
 
+  // "What's left?": shown when the main emotion can't get what it wants.
+  // Before a secondary emotion is chosen it asks for one; afterwards only
+  // the closing notes remain, and they move below the whole thought.
   function leftoverCard() {
-    const core = BY_ID[state.primary.id].core;
-    const need = NEEDS[core];
+    const need = NEEDS[BY_ID[state.primary.id].core];
     return `
     <section class="card leftover">
       <h3>What's left?</h3>
       <p>If you can't give the emotion what it wants, is there a secondary emotion you're feeling that you can tend to as well?</p>
+      <button class="btn primary" id="choose-secondary">Select a secondary emotion on the wheel</button>
       ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
-      ${
-        state.secondary.id
-          ? ""
-          : `<button class="btn primary" id="choose-secondary">Select a secondary emotion on the wheel</button>`
-      }
       <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
     </section>`;
+  }
+  function leftoverNotes() {
+    const need = NEEDS[BY_ID[state.primary.id].core];
+    return `
+    <section class="card leftover">
+      ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
+      <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
+    </section>`;
+  }
+
+  // An emotion's part is done once its action is written (or, for the
+  // main emotion, once "I can't give…" is checked).
+  function thoughtDone(which) {
+    return !!state[which].action.trim() || (which === "primary" && state.cantGive);
+  }
+  // The whole thought only appears once it says more than the emotion box does.
+  function showWhole() {
+    return state.cantGive || !!state.primary.action.trim() || !!state.secondary.action.trim();
   }
 
   function renderPanel() {
@@ -358,9 +375,9 @@
     }
     panel.innerHTML = `
       ${emotionCard("primary")}
-      ${state.cantGive ? leftoverCard() : ""}
+      ${state.cantGive && !state.secondary.id ? leftoverCard() : ""}
       ${state.cantGive && state.secondary.id ? emotionCard("secondary") : ""}
-      <section class="card copy" style="--h:${CORE[BY_ID[state.primary.id].core].hue}">
+      <section class="card copy" style="--h:${CORE[BY_ID[state.primary.id].core].hue}" ${showWhole() ? "" : "hidden"}>
         <h3>Your whole thought</h3>
         <blockquote class="sentence" id="full-text"></blockquote>
         <div class="btn-row">
@@ -368,7 +385,8 @@
           <button class="btn ghost" id="start-over">Start over</button>
         </div>
         <p class="muted small">Say it out loud, into a mirror if you can.</p>
-      </section>`;
+      </section>
+      ${state.cantGive && state.secondary.id ? leftoverNotes() : ""}`;
     $("#full-text").textContent = fullText();
     renderChoosing();
   }
@@ -377,8 +395,11 @@
   panel.addEventListener("input", (e) => {
     const card = e.target.closest(".emo");
     if (!card || !e.target.hasAttribute("data-action")) return;
-    state[card.dataset.which].action = e.target.value;
+    const which = card.dataset.which;
+    state[which].action = e.target.value;
     $("#full-text").textContent = fullText();
+    $(".cta", card).hidden = thoughtDone(which);
+    $(".copy").hidden = !showWhole();
   });
 
   // Working in a card makes it the one the wheel shows.
@@ -387,7 +408,7 @@
     if (card && !e.target.closest("[data-pick]")) setActive(card.dataset.which);
   };
   panel.addEventListener("focusin", activate);
-  panel.addEventListener("pointerdown", activate);
+  panel.addEventListener("click", activate); // not pointerdown: that also fires when a scroll starts
 
   panel.addEventListener("change", (e) => {
     if (e.target.id !== "cant-give") return;
@@ -417,7 +438,7 @@
       const typed = state.primary.action.trim() || state.secondary.action.trim();
       if (typed && !confirm("Clear everything and start over?")) return;
       resetState();
-      wheel.setHighlight([]);
+      showActiveOnWheel(); // clears the highlight and unlocks the wheel
       wheel.reset();
       renderPanel();
       window.scrollTo({ top: 0, behavior: "smooth" });
