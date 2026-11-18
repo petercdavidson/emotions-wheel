@@ -1,0 +1,24 @@
+# Operating system clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+
+# Tools used while testing (this site has no dependencies)
+node_modules/
+__pycache__/
+.venv/
+
+# Test output, which belongs outside the repository
+screenshots/
+test-results/
+playwright-report/
+*.log
+
+# Secrets, in case any are ever needed
+.env
+.env.*
