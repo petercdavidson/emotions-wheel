@@ -47,6 +47,10 @@
 
 /* Olympian Mode: everything in monochrome */
 .mono .page { filter: grayscale(1); }
+.mono .cell.lvl0 path, .mono .cell.lvl1 path, .mono .cell.lvl2 path { fill: var(--surface); }
+.mono .cell.lvl0:hover path, .mono .cell.lvl1:hover path, .mono .cell.lvl2:hover path,
+.mono .cell.lvl0.on path, .mono .cell.lvl1.on path, .mono .cell.lvl2.on path { fill: hsl(0 0% var(--l-on)); }
+.mono .has-on .cell:not(.on) { opacity: 1; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -66,7 +70,7 @@ body {
 .site-header { text-align: center; padding: 24px 16px 0; }
 .site-header h1 { margin: 0; font-size: 1.9rem; letter-spacing: .02em; }
 .tagline { margin: 4px 0 8px; color: var(--muted); }
-.mono-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--muted); cursor: pointer; }
+.mono-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted); cursor: pointer; margin-bottom: 12px; }
 main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .site-footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 0 16px 28px; }
 .site-footer p { margin: 4px 0; }
@@ -103,10 +107,72 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .gate { width: 100%; max-width: 460px; text-align: center; margin: 0; padding: 28px 24px; }
 .gate h2 { font-size: 1.3rem; }
 .basics { list-style: none; padding: 0; margin: 18px 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.basics li {
-  font-size: 1.35rem; font-weight: 700; padding: 14px 8px;
-  border: 1px solid var(--soft-line); border-radius: 12px; background: var(--bg);
+.basic {
+  position: relative; width: 100%; font: inherit; font-size: 1.35rem; font-weight: 700; color: var(--ink);
+  padding: 14px 8px; border: 1px solid var(--soft-line); border-radius: 12px; background: var(--bg);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s;
 }
+.basic-label { position: relative; display: inline-block; }
+.water { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.water::before {
+  content: ""; position: absolute; left: -10%; right: -10%; top: 0; bottom: 0;
+  background: hsl(200 85% 62% / .55); border-radius: 40% 45% 0 0 / 14px 14px 0 0;
+  transform: translateY(105%);
+}
+.fx { position: absolute; pointer-events: none; font-weight: 800; }
+
+/* Tired: sleepy Z's drift up */
+.fx-tired { animation: sleepy 1.6s ease-in-out; }
+.zzz { top: 4px; color: var(--accent); opacity: 0; animation: zfloat 1.6s ease-out forwards; }
+@keyframes zfloat {
+  0% { transform: translate(0, 0) rotate(-10deg); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(26px, -54px) rotate(14deg); opacity: 0; }
+}
+@keyframes sleepy { 0%,100% { transform: none; } 35%,65% { transform: rotate(-3deg) translateY(2px); } }
+
+/* Hungry: tummy rumble lines and a wiggle */
+.fx-hungry { animation: wiggle .55s ease-in-out 2; }
+@keyframes wiggle {
+  0%,100% { transform: none; } 20% { transform: rotate(-4deg); } 40% { transform: rotate(4deg); }
+  60% { transform: rotate(-3deg); } 80% { transform: rotate(2deg); }
+}
+.rumble { top: 50%; font-size: 1.6rem; color: hsl(28 80% 50%); opacity: 0; }
+.rumble.left { left: -4px; animation: rumbleL .5s ease-out forwards; }
+.rumble.right { right: -4px; animation: rumbleR .5s ease-out forwards; }
+@keyframes rumbleL { 0% { transform: translate(6px, -50%); opacity: 1; } 100% { transform: translate(-16px, -50%); opacity: 0; } }
+@keyframes rumbleR { 0% { transform: translate(-6px, -50%); opacity: 1; } 100% { transform: translate(16px, -50%); opacity: 0; } }
+
+/* Thirsty: the box fills up with water, bubbles, then gulps it down */
+.fx-thirsty .water::before { animation: fillup 2.2s ease-in-out; }
+@keyframes fillup {
+  0% { transform: translateY(105%); } 40%,62% { transform: translateY(0); }
+  50% { transform: translateY(4%); } 100% { transform: translateY(105%); }
+}
+.bubble {
+  bottom: -10px; aspect-ratio: 1; border-radius: 50%; border: 2px solid hsl(200 90% 96% / .9);
+  opacity: 0; animation: bubble 1.1s ease-in forwards;
+}
+@keyframes bubble { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-62px); opacity: 0; } }
+
+/* Triggered: goes red, shakes, and gets a cartoon anger mark */
+.fx-triggered { animation: mad 1.1s ease-out; }
+.fx-triggered .basic-label { animation: shake .35s linear 2; }
+@keyframes mad {
+  0% { background: var(--bg); } 10%,60% { background: hsl(2 80% 52%); color: #fff; border-color: hsl(2 80% 42%); }
+  100% { background: var(--bg); }
+}
+@keyframes shake {
+  0%,100% { transform: none; } 20% { transform: translate(-3px, 1px); } 40% { transform: translate(3px, -1px); }
+  60% { transform: translate(-2px, -1px); } 80% { transform: translate(2px, 1px); }
+}
+.vein { top: -14px; right: -8px; font-size: 1.9rem; animation: vein 1.1s ease-out forwards; }
+@keyframes vein {
+  0% { transform: scale(0) rotate(-20deg); opacity: 1; } 25% { transform: scale(1.35) rotate(8deg); }
+  40% { transform: scale(1) rotate(0); } 55% { transform: scale(1.2); } 70% { transform: scale(1); opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .gate-ask { font-size: 1.1rem; margin: 0 0 18px; }
 .gate .btn { min-width: 220px; font-size: 1.05rem; padding: 12px 20px; }
 
@@ -120,7 +186,16 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .wheel { width: 100%; max-width: 640px; margin: 0 auto; }
 .wheel-svg { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 
-.cell { cursor: pointer; }
+.wheel-svg { overflow: visible; }
+.cell { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: transform .18s ease-out; }
+.cell.picked { transform: scale(1.35); }
+.cell.lvl0.picked { transform: scale(1.06); }
+.cell.lvl1.picked { transform: scale(1.18); }
+.cell.pop { transform: scale(1.5); opacity: 1 !important; }
+.cell.lvl0.pop { transform: scale(1.08); }
+.cell.lvl1.pop { transform: scale(1.25); }
+.cell.pop path, .cell.picked path { stroke: var(--line); stroke-width: 1.5; filter: drop-shadow(0 3px 6px rgb(0 0 0 / .25)); }
+.cell.pop text { font-weight: 800; }
 .cell path { stroke: var(--cell-line); stroke-width: 1.2; transition: fill .15s, opacity .2s; }
 .cell.lvl0 path { fill: hsl(var(--h) var(--s-core) var(--l-core)); }
 .cell.lvl1 path { fill: hsl(var(--h) var(--s-mid) var(--l-mid)); }
@@ -184,7 +259,16 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .guidance { margin: 6px 0; }
 
 .thought { border-top: 1px solid var(--soft-line); margin-top: 14px; padding-top: 8px; }
-.thought h3 { margin: 6px 0; font-size: 1.05rem; }
+.thought h3 { margin: 6px 0 10px; font-size: 1.05rem; }
+.given { margin: 4px 0; color: var(--muted); }
+.given strong { color: var(--ink); }
+.needs {
+  margin: 12px 0 10px; font-size: 1.3rem; padding: 10px 14px; border-radius: 10px;
+  background: hsl(var(--h) 55% 50% / .14); border-left: 5px solid hsl(var(--h) 50% 55%);
+}
+.field textarea::placeholder { color: var(--muted); opacity: .7; }
+.leftover h3 { margin: 0 0 6px; }
+.leftover p { margin: 8px 0; }
 .field { display: block; margin: 10px 0; font-weight: 500; font-size: .95rem; }
 .field textarea, .field input[type="text"] {
   display: block; width: 100%; margin-top: 4px; font: inherit; font-weight: 400; font-size: 1rem;
@@ -209,8 +293,6 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .check-inline { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
 .check-inline input { width: 18px; height: 18px; margin-top: 3px; flex: none; }
 .cant { border-top: 1px solid var(--soft-line); margin-top: 16px; padding-top: 14px; font-weight: 600; }
-.cant-body { margin: 6px 0 0 28px; }
-.cant-body p { margin: 8px 0; }
 
 .copy h3 { margin: 0 0 4px; }
 .sentence {

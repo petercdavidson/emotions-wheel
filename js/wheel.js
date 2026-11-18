@@ -117,9 +117,10 @@ function createWheel(container, { onPick }) {
     el("title", {}, g).textContent = pathOf(n.id).map((p) => p.word).join(" › ");
     cells[n.id] = g;
   }
+  const dividers = el("g", { class: "dividers" }, rotor);
   for (const c of NODES.filter((n) => n.level === 0)) {
     const [x, y] = pt(R.outer, c.a1);
-    el("line", { x1: 0, y1: 0, x2: x, y2: y, class: "divider" }, rotor);
+    el("line", { x1: 0, y1: 0, x2: x, y2: y, class: "divider" }, dividers);
   }
   el("circle", { r: R.outer, class: "rim" }, rotor);
   container.appendChild(svg);
@@ -211,11 +212,44 @@ function createWheel(container, { onPick }) {
     { passive: false }
   );
 
+  let picked = null;
+  // Pop a slice up larger while the mouse is over it, so small text is readable.
+  // Only one slice is ever popped; it's tracked here rather than with
+  // enter/leave events, which browsers drop when an element is moved.
+  let hovered = null;
+  function setHovered(g) {
+    if (g === hovered) return;
+    if (hovered) {
+      hovered.classList.remove("pop");
+      if (hovered !== picked) lower(hovered);
+    }
+    hovered = g;
+    if (g) {
+      g.classList.add("pop");
+      rotor.appendChild(g); // draw on top of its neighbours
+    } else raisePicked();
+  }
+  svg.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse" || (down && down.moved)) return setHovered(null);
+    setHovered(e.target.closest ? e.target.closest(".cell") : null);
+  });
+  svg.addEventListener("pointerleave", () => setHovered(null));
+  const lower = (g) => rotor.insertBefore(g, dividers); // back under the divider lines
+  function raisePicked() {
+    if (picked) rotor.appendChild(picked);
+  }
+
   return {
-    setHighlight(ids) {
-      for (const g of Object.values(cells)) g.classList.remove("on");
+    // ids: the selected word and its parents; leaf: the selected word itself (shown larger)
+    setHighlight(ids, leaf) {
+      for (const g of Object.values(cells)) g.classList.remove("on", "picked");
       for (const id of ids) cells[id] && cells[id].classList.add("on");
       svg.classList.toggle("has-on", ids.length > 0);
+      if (picked && picked !== hovered) lower(picked);
+      picked = leaf ? cells[leaf] : null;
+      if (picked) picked.classList.add("picked");
+      raisePicked();
+      if (hovered) rotor.appendChild(hovered); // a popped slice stays on top
     },
     focus,
     reset: () => animateTo(0),

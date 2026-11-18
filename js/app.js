@@ -9,6 +9,7 @@
   const esc = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const CORE = Object.fromEntries(WHEEL.map((c) => [c.name, c]));
+  const ROOT_NOUN = { Anger: "anger", Disgust: "disgust", Sad: "sadness", Happy: "happiness", Surprise: "surprise", Fear: "fear" };
   const isPhone = () => window.matchMedia("(max-width: 820px)").matches;
 
   function toast(msg) {
@@ -23,7 +24,56 @@
   $("#mono").addEventListener("change", (e) => document.documentElement.classList.toggle("mono", e.target.checked));
 
   // ---------- First: basic needs (pop-up with a short countdown) ----------
-  $("#basics").innerHTML = BASICS.map((b) => `<li>${esc(b)}?</li>`).join("");
+  $("#basics").innerHTML = BASICS.map(
+    (b) => `<li><button type="button" class="basic" data-fx="${b.toLowerCase()}">
+      <span class="water" aria-hidden="true"></span><span class="basic-label">${esc(b)}?</span></button></li>`
+  ).join("");
+
+  // Just for fun while the countdown runs. Nothing is selected or recorded.
+  function spawn(btn, cls, text, style) {
+    const s = document.createElement("span");
+    s.className = `fx ${cls}`;
+    s.setAttribute("aria-hidden", "true");
+    s.textContent = text;
+    Object.assign(s.style, style);
+    (cls === "bubble" ? $(".water", btn) : btn).appendChild(s);
+    s.addEventListener("animationend", () => s.remove());
+    setTimeout(() => s.remove(), 3000);
+  }
+  function restart(btn, cls) {
+    btn.classList.remove(cls);
+    void btn.offsetWidth; // let the animation play again
+    btn.classList.add(cls);
+  }
+  const EFFECTS = {
+    tired(btn) {
+      restart(btn, "fx-tired");
+      [["z", 0, 14], ["Z", 0.35, 20], ["Z", 0.7, 27]].forEach(([t, d, size], i) =>
+        spawn(btn, "zzz", t, { animationDelay: `${d}s`, fontSize: `${size}px`, right: `${18 - i * 4}px` })
+      );
+    },
+    hungry(btn) {
+      restart(btn, "fx-hungry");
+      for (let i = 0; i < 3; i++) {
+        spawn(btn, "rumble left", "(", { animationDelay: `${i * 0.18}s` });
+        spawn(btn, "rumble right", ")", { animationDelay: `${i * 0.18}s` });
+      }
+    },
+    thirsty(btn) {
+      restart(btn, "fx-thirsty");
+      for (let i = 0; i < 6; i++)
+        spawn(btn, "bubble", "", { left: `${12 + Math.random() * 76}%`, animationDelay: `${0.3 + Math.random() * 0.8}s`, width: `${5 + Math.random() * 7}px` });
+    },
+    triggered(btn) {
+      restart(btn, "fx-triggered");
+      spawn(btn, "vein", "💢", {});
+    },
+  };
+  $("#basics").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-fx]");
+    if (btn) EFFECTS[btn.dataset.fx](btn);
+  });
+
   (function countdown() {
     const go = $("#gate-go");
     let n = 5;
@@ -33,9 +83,8 @@
         n--;
         setTimeout(tick, 1000);
       } else {
-        go.textContent = "I've checked. Continue";
+        go.textContent = "Continue";
         go.disabled = false;
-        go.focus();
       }
     };
     tick();
@@ -46,46 +95,58 @@
   })();
 
   // ---------- State ----------
-  const blankThought = () => ({ feeling: "", connected: "", body: "", action: "" });
   let state;
   function resetState() {
     state = {
       active: "primary", // which emotion a tap on the wheel sets
       cantGive: false,
-      primary: { id: null, f: blankThought() },
-      secondary: { id: null, f: blankThought() },
+      primary: { id: null, action: "" },
+      secondary: { id: null, action: "" },
     };
   }
   resetState();
 
   // ---------- Wheel ----------
-  const wheel = createWheel($("#main-wheel"), { onPick: (n) => pick(n.id) });
+  const wheel = createWheel($("#main-wheel"), { onPick: (n) => tapWheel(n.id) });
+
+  function whichForWheel() {
+    return state.cantGive ? state.active : "primary";
+  }
+
+  // Tapping a slice that's already selected deselects it (back to its parent).
+  // Deselecting the center emotion clears the selection entirely.
+  function tapWheel(id) {
+    const which = whichForWheel();
+    const cur = state[which].id;
+    if (cur && pathOf(cur).some((p) => p.id === id)) {
+      const parent = BY_ID[id].parent;
+      if (parent) pick(parent, which);
+      else clear(which);
+    } else {
+      pick(id, which);
+    }
+  }
 
   function pick(id, which) {
-    which = which || (state.cantGive ? state.active : "primary");
-    const s = state[which];
-    // Autofill the first three parts, unless you've typed your own words there.
-    const before = s.id ? autofill(s.id) : {};
-    const after = autofill(id);
-    for (const k of Object.keys(after)) {
-      const cur = s.f[k].trim().toLowerCase();
-      if (!cur || cur === (before[k] || "").toLowerCase()) s.f[k] = after[k];
-    }
-    s.id = id;
+    which = which || whichForWheel();
+    state[which].id = id;
     state.active = which;
     showActiveOnWheel();
     renderPanel();
   }
 
-  const ROOT_NOUN = { Anger: "anger", Disgust: "disgust", Sad: "sadness", Happy: "happiness", Surprise: "surprise", Fear: "fear" };
-  function autofill(id) {
-    const n = BY_ID[id];
-    return { feeling: n.word.toLowerCase(), connected: ROOT_NOUN[n.core], body: CORE[n.core].wants };
+  function clear(which) {
+    if (which === "primary") resetState();
+    else {
+      state.secondary.id = null;
+    }
+    showActiveOnWheel();
+    renderPanel();
   }
 
   function showActiveOnWheel() {
     const id = state[state.active].id;
-    wheel.setHighlight(id ? pathOf(id).map((p) => p.id) : []);
+    wheel.setHighlight(id ? pathOf(id).map((p) => p.id) : [], id);
     if (id) wheel.focus(id);
     renderChoosing();
   }
@@ -102,9 +163,9 @@
     const box = $("#choosing");
     box.hidden = !state.cantGive;
     if (!state.cantGive) return;
-    const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "not chosen yet");
-    box.innerHTML = `<span class="small">Tapping the wheel sets:</span>
-      <div class="seg" role="group" aria-label="Which emotion the wheel sets">
+    const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "none");
+    box.innerHTML = `<span class="small">Wheel selects:</span>
+      <div class="seg" role="group" aria-label="Which emotion the wheel selects">
         ${["primary", "secondary"]
           .map(
             (w) => `<button data-set-active="${w}" aria-pressed="${state.active === w}">
@@ -152,115 +213,129 @@
 
   $("#wants-list").innerHTML = WHEEL.map((c) => `<li><strong>${esc(c.name)}</strong> wants ${esc(c.wants)}.</li>`).join("");
 
-  // ---------- Panel ----------
-  const panel = $("#panel");
-
-  function sentence(f) {
-    const b = (v) => (v && v.trim() ? v.trim().replace(/[.,;:]+$/, "") : "___");
-    const a = f.action ? f.action.trim() : "";
-    const action = a ? (a[0].toUpperCase() + a.slice(1)).replace(/([^.!?])$/, "$1.") : "___.";
-    return `I'm feeling ${b(f.feeling)}. This is connected to ${b(f.connected)}. My body needs ${b(f.body)}. ${action}`;
+  // ---------- The whole thought ----------
+  // The first three parts come straight from the selected word; only the action is typed.
+  function parts(id) {
+    const n = BY_ID[id];
+    return {
+      feeling: n.word.toLowerCase(),
+      connected: n.level > 0 ? ROOT_NOUN[n.core] : null, // redundant for a center emotion
+      body: CORE[n.core].wants,
+    };
   }
 
-  function fullText() {
-    let t = sentence(state.primary.f);
-    if (state.cantGive && state.primary.id) {
-      t += `\n\nI can't give ${BY_ID[state.primary.id].core.toLowerCase()} what it wants right now.`;
-      if (state.secondary.id) t += `\n\nSecondary emotion: ${sentence(state.secondary.f)}`;
+  function sentence(which, { withAction = true } = {}) {
+    const s = state[which];
+    const p = parts(s.id);
+    let t = `I'm feeling ${p.feeling}.`;
+    if (p.connected) t += ` This is connected to ${p.connected}.`;
+    t += ` My body needs ${p.body}.`;
+    if (withAction) {
+      const a = s.action.trim();
+      t += " " + (a ? (a[0].toUpperCase() + a.slice(1)).replace(/([^.!?])$/, "$1.") : "___.");
     }
     return t;
   }
 
-  const FIELDS = [
-    ["feeling", "I'm feeling…"],
-    ["connected", "This is connected to…"],
-    ["body", "My body needs…"],
-    ["action", "What I'm going to do about it:"],
-  ];
+  function fullText() {
+    if (!state.cantGive) return sentence("primary");
+    let t = sentence("primary", { withAction: false });
+    t += `\n\nI can't give ${ROOT_NOUN[BY_ID[state.primary.id].core]} what it wants right now.`;
+    if (state.secondary.id) t += `\n\nSecondary emotion: ${sentence("secondary")}`;
+    return t;
+  }
+
+  // ---------- Panel ----------
+  const panel = $("#panel");
 
   function emotionCard(which) {
     const s = state[which];
     const n = BY_ID[s.id];
     const core = CORE[n.core];
     const need = NEEDS[n.core];
+    const p = parts(s.id);
     const path = pathOf(n.id);
     const others = nodesForWord(n.word).filter((o) => o.id !== n.id);
     const kids = childrenOf(n.id);
+    const showAction = !(which === "primary" && state.cantGive);
     return `
     <article class="card emo ${state.active === which ? "active" : ""}" data-which="${which}" style="--h:${core.hue}">
       ${which === "secondary" ? `<div class="emo-label">Secondary emotion</div>` : ""}
       <nav class="crumbs" aria-label="Where this word sits">${path
-        .map((p, i) =>
-          i === path.length - 1 ? `<span>${esc(p.word)}</span>` : `<button class="linkish" data-pick="${esc(p.id)}">${esc(p.word)}</button> ›`
+        .map((x, i) =>
+          i === path.length - 1 ? `<span>${esc(x.word)}</span>` : `<button class="linkish" data-pick="${esc(x.id)}">${esc(x.word)}</button> ›`
         )
         .join(" ")}</nav>
       <h2 class="big-word">${esc(n.word)}</h2>
       ${
         kids.length
           ? `<div class="specific">
-              <p class="specific-q">Can you get more specific?</p>
+              <p class="specific-q">Select a more specific emotion:</p>
               <div class="specific-opts">${kids
                 .map((k) => `<button class="opt" data-pick="${esc(k.id)}">${esc(k.word)}</button>`)
                 .join("")}</div>
             </div>`
           : ""
       }
-      <p class="wants"><strong>${esc(core.name)}</strong> wants <strong>${esc(core.wants)}</strong>.</p>
-      ${need.guidance ? `<p class="guidance">${esc(need.guidance)}</p>` : ""}
       ${
         others.length
           ? `<p class="muted small">Also on the wheel under ${others
-              .map((o) => `<button class="linkish" data-pick="${esc(o.id)}">${esc(pathOf(o.id).slice(0, -1).map((p) => p.word).join(" › "))}</button>`)
+              .map((o) => `<button class="linkish" data-pick="${esc(o.id)}">${esc(pathOf(o.id).slice(0, -1).map((x) => x.word).join(" › "))}</button>`)
               .join(" and ")}.</p>`
           : ""
       }
       <div class="thought">
-        <div class="thought-head">
-          <h3>Complete the whole thought</h3>
-        </div>
-        ${FIELDS.map(
-          ([k, label]) => `<label class="field">${label}
-            ${
-              k === "action"
-                ? `<textarea rows="2" data-k="${k}">${esc(s.f[k])}</textarea>`
-                : `<input type="text" data-k="${k}" value="${esc(s.f[k])}">`
-            }</label>`
-        ).join("")}
-        <details class="ideas">
-          <summary><span aria-hidden="true">?</span> Ideas</summary>
-          <p class="ideas-note">General suggestions written for this site. These are interpretations, not therapeutic guidance.</p>
-          <ul>${need.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>
-        </details>
+        <h3>Complete the whole thought</h3>
+        <p class="given">I'm feeling <strong>${esc(p.feeling)}</strong>.</p>
+        ${p.connected ? `<p class="given">This is connected to <strong>${esc(p.connected)}</strong>.</p>` : ""}
+        <p class="needs">My body needs <strong>${esc(p.body)}</strong>.</p>
+        ${need.guidance ? `<p class="guidance">${esc(need.guidance)}</p>` : ""}
+        ${
+          showAction
+            ? `<label class="field">What I'm going to do about it:
+                <textarea rows="2" data-action placeholder="e.g. I'm going to…">${esc(s.action)}</textarea></label>
+              <details class="ideas">
+                <summary><span aria-hidden="true">?</span> Ideas</summary>
+                <p class="ideas-note">General suggestions written for this site. These are interpretations, not therapeutic guidance.</p>
+                <ul>${need.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>
+              </details>`
+            : ""
+        }
       </div>
       ${
         which === "primary"
           ? `<label class="check-inline cant"><input type="checkbox" id="cant-give" ${state.cantGive ? "checked" : ""}>
-              I can't give this emotion what it wants right now</label>
-            ${
-              state.cantGive
-                ? `<div class="cant-body">
-                    ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
-                    <p>What's left? Is there a secondary emotion you're feeling that you can tend to as well?</p>
-                    ${
-                      state.secondary.id
-                        ? ""
-                        : `<button class="btn primary" id="choose-secondary">Choose it on the wheel</button>`
-                    }
-                  </div>`
-                : ""
-            }`
+              I can't give this emotion what it wants right now</label>`
           : ""
       }
     </article>`;
   }
 
+  function leftoverCard() {
+    const core = BY_ID[state.primary.id].core;
+    const need = NEEDS[core];
+    return `
+    <section class="card leftover">
+      <h3>What's left?</h3>
+      <p>If you can't give it what it wants, is there a secondary emotion you're feeling that you can tend to as well?</p>
+      ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
+      ${
+        state.secondary.id
+          ? ""
+          : `<button class="btn primary" id="choose-secondary">Select a secondary emotion on the wheel</button>`
+      }
+    </section>`;
+  }
+
   function renderPanel() {
     if (!state.primary.id) {
-      panel.innerHTML = `<div class="card empty"><p>Tap a feeling on the wheel.</p></div>`;
+      panel.innerHTML = `<div class="card empty"><p>Select an emotion on the wheel.</p></div>`;
+      renderChoosing();
       return;
     }
     panel.innerHTML = `
       ${emotionCard("primary")}
+      ${state.cantGive ? leftoverCard() : ""}
       ${state.cantGive && state.secondary.id ? emotionCard("secondary") : ""}
       <section class="card copy">
         <h3>Your whole thought</h3>
@@ -275,12 +350,11 @@
     renderChoosing();
   }
 
-  // Typing in a field: update state and the preview without redrawing.
+  // Typing the action: update state and the preview without redrawing.
   panel.addEventListener("input", (e) => {
-    const k = e.target.dataset.k;
     const card = e.target.closest(".emo");
-    if (!k || !card) return;
-    state[card.dataset.which].f[k] = e.target.value;
+    if (!card || !e.target.hasAttribute("data-action")) return;
+    state[card.dataset.which].action = e.target.value;
     $("#full-text").textContent = fullText();
   });
 
@@ -296,7 +370,7 @@
     if (e.target.id !== "cant-give") return;
     state.cantGive = e.target.checked;
     if (!state.cantGive) {
-      state.secondary = { id: null, f: blankThought() };
+      state.secondary = { id: null, action: "" };
       state.active = "primary";
       showActiveOnWheel();
     }
@@ -313,17 +387,16 @@
       state.active = "secondary";
       showActiveOnWheel();
       if (isPhone()) $("#choosing").scrollIntoView({ behavior: "smooth", block: "start" });
-      toast("Tap the secondary emotion on the wheel");
+      toast("Select a secondary emotion on the wheel");
     }
     if (e.target.id === "copy") copyText(fullText());
     if (e.target.id === "start-over") {
-      const typed = ["primary", "secondary"].some((w) => state[w].f.action.trim());
+      const typed = state.primary.action.trim() || state.secondary.action.trim();
       if (typed && !confirm("Clear everything and start over?")) return;
       resetState();
       wheel.setHighlight([]);
       wheel.reset();
       renderPanel();
-      renderChoosing();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
