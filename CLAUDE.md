@@ -38,15 +38,21 @@ Don't add other storage without asking. Update the footer and README if this lis
 ## Design decisions already settled
 
 - **Theme:** light by default, never follows the device setting. Dark mode and Olympian Mode
-  (monochrome, with an unshaded wheel like the printed original) are toggles at the bottom.
+  are toggles at the bottom.
+- **Olympian Mode:** no color anywhere (including the opening check and the browser bar).
+  Pure white page, black ink, an unshaded black-and-white wheel like the printed original.
+  Wheel selections and buttons are white text on black; light grays only for accents in
+  panels and blocks. With Dark mode too, it inverts (black page, black text on white).
+  Defined with explicit CSS variables under `:root.mono`, not a grayscale filter.
 - **Wheel text:** every word is the same size and weight, measured so the longest fits, and
   inner-aligned, flipping to stay upright as the wheel turns. Hovering, or sliding a finger,
   enlarges a word by the same amount for every word. Slices may grow outward over the next
   ring, never inward. Only a selected outer-ring word stays enlarged.
 - **Rotation:**
   - A selection turns to the 3 o'clock position.
-  - Mouse: drag anywhere to spin. Touch: drag only from the outer edge. A flick coasts
-    (inertia).
+  - Mouse: drag anywhere to spin. Touch: drag only from the outer edge (the grip ring, with
+    a little slack). Outside it, the corners of the wheel's box scroll the page. A flick
+    coasts (inertia).
   - Once an outer-ring word is selected, the wheel resists and springs back.
   - On touch, no spinning while anything is selected, so the page can scroll.
   - **Only "Start over" turns the wheel back to its starting position.** "Clear selection"
@@ -65,9 +71,12 @@ Don't add other storage without asking. Update the footer and README if this lis
   5. "What's left?" (shown while "I can't give…" is checked).
   6. Start over.
 - **Above the wheel:** the Primary/Secondary switch plus "Remove secondary emotion" while a
-  secondary emotion is active. Otherwise "Clear selection" once an outer-ring word is
-  selected, plus "+ Add a secondary emotion" after a "No". The search bar hides while an
-  outer-ring word is selected.
+  secondary emotion is active. Otherwise "Clear selection" once any word is selected, plus
+  "+ Add a secondary emotion" after a "No". The search bar hides while any word is selected
+  (to encourage "Select a more specific emotion"), so tapping between rings doesn't change
+  the layout. On a phone scrolled past the top of the wheel, `beforeChange()` also keeps the
+  wheel still on screen if something above it appears or disappears (iOS Safari has no
+  scroll anchoring); scroll the page only in a microtask queued after it.
 - **Search:** custom suggestions that match anywhere in a word, list words that start with
   the typed text first, and show where each word sits on the wheel. The list stays open while
   there's text, and × or Esc clears it.

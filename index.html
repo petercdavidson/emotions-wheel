@@ -17,6 +17,9 @@
     try {
       if (localStorage.getItem("ew.dark") === "1") document.documentElement.classList.add("dark");
       if (localStorage.getItem("ew.mono") === "1") document.documentElement.classList.add("mono");
+      var c = document.documentElement.classList;
+      document.querySelector('meta[name="theme-color"]').content =
+        c.contains("mono") ? (c.contains("dark") ? "#000000" : "#ffffff") : c.contains("dark") ? "#1b1a18" : "#f7f4ec";
       // Skip the opening check if it was acknowledged in the last 15 minutes.
       if (Date.now() - Number(localStorage.getItem("ew.checked") || 0) < 15 * 60 * 1000)
         document.documentElement.classList.add("checked");
@@ -40,7 +43,7 @@
               <div class="search-box">
                 <input id="wheel-search" type="search" placeholder="Search for an emotion…" autocomplete="off"
                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
-                <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden>×</button>
+                <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
               </div>
               <ul id="search-results" class="search-results" role="listbox" hidden data-flip="results"></ul>
             </div>

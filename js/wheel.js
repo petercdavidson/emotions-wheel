@@ -82,7 +82,8 @@ function el(name, attrs = {}, parent) {
  *           press on the outer edge and slide to spin.
  */
 function createWheel(container, { onPick }) {
-  const SPIN_EDGE = R.outer - 30; // on touch, spinning starts from here outward
+  const SPIN_EDGE = R.outer - 30; // on touch, spinning starts from here outward...
+  const TOUCH_REACH = R.grip + 16; // ...up to just past the grip ring. Beyond it, a finger scrolls the page.
   let rot = 0; // current rotation of the wheel, in degrees
   let anim = null;
   const svg = el("svg", {
@@ -289,6 +290,8 @@ function createWheel(container, { onPick }) {
     // On touch, the edge spins the wheel, but only while nothing is selected.
     // With a selection, a touch on the edge is left alone so the page can scroll.
     if (!isMouse(e) && p.r > SPIN_EDGE && hasSelection) return;
+    // Outside the wheel (the corners of its box), a touch just scrolls the page.
+    if (!isMouse(e) && p.r > TOUCH_REACH) return;
     const mode = isMouse(e) ? "mouse" : p.r > SPIN_EDGE ? "spin" : "scrub";
     down = { mode, last: p.a, x: e.clientX, y: e.clientY, moved: false, node: nodeAt(p) };
     svg.setPointerCapture(e.pointerId);
@@ -361,12 +364,14 @@ function createWheel(container, { onPick }) {
     if (isMouse(e) && !down) setHovered(null);
   });
   // Stop the page from scrolling or zooming while a finger is on the wheel.
-  // (Except on the edge while something is selected, so the page can still scroll from there.)
+  // (Except outside the wheel, and on the edge while something is selected, so the page can
+  // still scroll from there.)
   svg.addEventListener(
     "touchstart",
     (e) => {
       const t = e.touches[0];
-      if (t && hasSelection && local(t).r > SPIN_EDGE) return;
+      const r = t ? local(t).r : 0;
+      if (r > TOUCH_REACH || (hasSelection && r > SPIN_EDGE)) return;
       e.preventDefault();
     },
     { passive: false }

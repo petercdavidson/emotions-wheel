@@ -44,13 +44,78 @@
     color-scheme: dark;
 }
 
-/* Olympian Mode: everything in monochrome */
-.mono .page { filter: grayscale(1); }
-.mono .cell.lvl0 path, .mono .cell.lvl1 path, .mono .cell.lvl2 path { fill: var(--surface); }
-.mono .cell.lvl0.hover path, .mono .cell.lvl1.hover path, .mono .cell.lvl2.hover path,
-.mono .cell.lvl0.on path, .mono .cell.lvl1.on path, .mono .cell.lvl2.on path,
-.mono .pop path { fill: hsl(0 0% var(--l-on)); }
+/* Olympian Mode: no color anywhere. White page, black ink, light grays for panel accents.
+   The wheel is black and white; selections and buttons are white text on black. */
+:root.mono {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --ink: #000000;
+  --muted: #555555;
+  --line: #000000;
+  --cell-line: #000000;
+  --soft-line: #d6d6d6;
+  --accent: #000000;
+  --accent-ink: #ffffff;
+  --focus: #000000;
+  --grip: #ededed;
+  --grip-tick: #9a9a9a;
+  --tint: #f0f0f0;      /* light gray fill for blocks */
+  --tint-edge: #9a9a9a; /* gray edges and accents */
+  --sel: #000000;       /* selected: fill... */
+  --sel-ink: #ffffff;   /* ...and text */
+}
+:root.mono.dark {
+  --bg: #000000;
+  --surface: #000000;
+  --ink: #ffffff;
+  --muted: #b0b0b0;
+  --line: #ffffff;
+  --cell-line: #ffffff;
+  --soft-line: #3a3a3a;
+  --accent: #ffffff;
+  --accent-ink: #000000;
+  --focus: #ffffff;
+  --grip: #1f1f1f;
+  --grip-tick: #6a6a6a;
+  --tint: #1c1c1c;
+  --tint-edge: #777777;
+  --sel: #ffffff;
+  --sel-ink: #000000;
+}
+.mono { accent-color: var(--ink); caret-color: var(--ink); }
+.mono .cell path { fill: var(--surface) !important; }
 .mono .has-on .cell:not(.on) { opacity: 1; }
+.mono .cell.hover path, .mono .cell.on path, .mono .pop path { fill: var(--sel) !important; }
+.mono .cell.on path { stroke: var(--sel-ink); }
+.mono .pop path { stroke: var(--sel); }
+.mono .cell.hover text, .mono .cell.on text, .mono .pop text { fill: var(--sel-ink); }
+.mono .readout { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+.mono .search-results .dot { background: var(--ink); }
+.mono .search-results li.on, .mono .search-results li[role=option]:hover { background: var(--tint); }
+.mono .emo { border-top-color: var(--tint-edge); }
+.mono .emo.active { outline-color: var(--tint-edge); }
+.mono .emo :focus-visible, .mono .emo textarea:focus { outline-color: var(--ink); }
+.mono .specific { background: var(--tint); border-color: var(--tint-edge); }
+.mono .opt { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+.mono .opt:hover { background: var(--muted); border-color: var(--muted); }
+.mono .thought .cta { background: var(--tint); border-left-color: var(--tint-edge); }
+.mono .sentence { background: var(--tint); border-left-color: var(--tint-edge); }
+.mono .list-core { border-left-color: var(--tint-edge); }
+.mono .btn.ghost, .mono .btn.yes, .mono .btn.no { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+.mono .btn.ghost:hover, .mono .btn.yes:hover, .mono .btn.no:hover, .mono .btn.primary:hover { background: var(--muted); border-color: var(--muted); }
+/* The opening check's animations, without color */
+.mono .zzz, .mono .rumble { color: var(--ink); }
+.mono .vein { filter: grayscale(1); }
+@keyframes parched-mono {
+  0%,100% { background: var(--bg); filter: none; }
+  25%,70% { background: var(--tint); border-color: var(--tint-edge); filter: blur(.9px); }
+}
+@keyframes mad-mono {
+  0% { background: var(--bg); } 10%,60% { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+  100% { background: var(--bg); }
+}
+.mono .fx-thirsty { animation-name: parched-mono; }
+.mono .fx-triggered { animation-name: mad-mono; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -225,17 +290,19 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 }
 
 .search input {
-  width: 100%; font: inherit; padding: 10px 14px; margin-bottom: 10px;
+  display: block; width: 100%; font: inherit; padding: 10px 14px;
   border: 1px solid var(--soft-line); border-radius: 10px; background: var(--surface); color: var(--ink);
 }
 .search { position: relative; }
-.search-box { position: relative; }
+.search-box { position: relative; margin-bottom: 10px; }
 .search-box input { padding-right: 44px; }
 .search-box input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
 .search-clear {
-  position: absolute; right: 6px; top: 5px; width: 34px; height: 34px; border-radius: 50%;
-  border: 0; background: transparent; color: var(--muted); font-size: 1.5rem; line-height: 1; cursor: pointer;
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%;
+  border: 0; padding: 0; background: transparent; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center;
 }
+.search-clear svg { width: 14px; height: 14px; display: block; }
 .search-clear:hover { background: var(--soft-line); color: var(--ink); }
 /* Suggestions sit in the page (pushing the wheel down) so they can stay open without covering it */
 .search-results {

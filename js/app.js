@@ -26,6 +26,8 @@
     box.checked = document.documentElement.classList.contains(id);
     box.addEventListener("change", () => {
       document.documentElement.classList.toggle(id, box.checked);
+      // The browser's bar matches the page background.
+      $('meta[name="theme-color"]').content = getComputedStyle(document.body).backgroundColor;
       try {
         localStorage.setItem(key, box.checked ? "1" : "0");
       } catch {}
@@ -150,6 +152,7 @@
 
   // ---------- Smooth layout changes ----------
   // Call beforeChange() just before showing, hiding or redrawing parts of the page.
+  // (Scroll the page only after it has run, in a microtask queued afterwards.)
   // It notes where each block is; once the change is made, blocks that moved glide
   // from their old spot to the new one, and newly shown blocks fade in.
   const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -162,11 +165,21 @@
   const flipBlocks = () => [...$$("[data-flip]"), ...$$("#panel > *")].filter(visible);
   let flipBefore = null;
   function beforeChange() {
-    if (flipBefore || reduceMotion()) return;
-    flipBefore = new Map(flipBlocks().map((el) => [flipKey(el), el.getBoundingClientRect().top]));
+    if (flipBefore) return;
+    // On a phone scrolled past the top of the wheel, keep the wheel where it is on screen
+    // when something above it appears or disappears (so the page doesn't jump).
+    const wheelEl = $("#main-wheel");
+    const wheelTop = wheelEl.getBoundingClientRect().top;
+    const anchor = isPhone() && wheelTop < 0 ? wheelTop : null;
+    flipBefore = reduceMotion() ? new Map() : new Map(flipBlocks().map((el) => [flipKey(el), el.getBoundingClientRect().top]));
     queueMicrotask(() => {
       const before = flipBefore;
       flipBefore = null;
+      if (anchor !== null) {
+        const shift = wheelEl.getBoundingClientRect().top - anchor;
+        if (Math.abs(shift) >= 1) window.scrollBy({ top: shift, behavior: "instant" });
+      }
+      if (reduceMotion()) return;
       for (const el of flipBlocks()) {
         const key = flipKey(el);
         el.style.transition = "none";
@@ -264,7 +277,7 @@
     const lockedIn = !!id && BY_ID[id].level === 2;
     wheel.setLocked(lockedIn);
     beforeChange();
-    $("#search").hidden = lockedIn; // no need to search once an outer-ring word is chosen
+    $("#search").hidden = !!id; // once a word is chosen, "Select a more specific emotion" takes over from search
     // On touch screens the wheel only spins while nothing is selected.
     const touch = window.matchMedia("(pointer: coarse)").matches;
     $("#spin-hint").hidden = lockedIn || (touch && !!id);
@@ -280,7 +293,7 @@
 
   // Shows which emotion a tap on the wheel will set (only when there are two).
   // Above the wheel: the Primary/Secondary switch with "Remove secondary emotion" while a
-  // secondary emotion is active; otherwise "Clear selection" once an outer-ring word is chosen
+  // secondary emotion is active; otherwise "Clear selection" once any word is chosen
   // (the search bar is hidden then), plus "Add a secondary emotion" after a "No".
   function renderChoosing() {
     beforeChange();
@@ -288,7 +301,7 @@
     const id = state[state.active].id;
     const secondaryOn = state.cantGive && state.wantsSecondary === true;
     const showAdd = state.cantGive && state.wantsSecondary === false;
-    const showReset = !secondaryOn && !!id && BY_ID[id].level === 2;
+    const showReset = !secondaryOn && !!id;
     box.hidden = !(secondaryOn || showAdd || showReset);
     if (box.hidden) return;
     if (!secondaryOn) {
@@ -330,7 +343,7 @@
     showActiveOnWheel();
     renderPanel();
     if (yes) {
-      if (isPhone()) $("#choosing").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (isPhone()) queueMicrotask(() => $("#choosing").scrollIntoView({ behavior: "smooth", block: "start" }));
       toast("Select a secondary emotion on the wheel");
     }
   }
@@ -444,7 +457,7 @@
     if (!b) return;
     pick(b.dataset.node);
     b.closest("details").open = false; // back to the exercise
-    $("#main-wheel").scrollIntoView({ behavior: "smooth", block: "start" });
+    queueMicrotask(() => $("#main-wheel").scrollIntoView({ behavior: "smooth", block: "start" }));
   });
 
   $("#wants-list").innerHTML = WHEEL.map((c) => `<li><strong>${esc(c.name)}</strong> wants ${esc(c.wants)}.</li>`).join("");
@@ -684,7 +697,7 @@
     showActiveOnWheel(); // clears the highlight, unlocks the wheel, shows the search bar again
     wheel.reset();
     renderPanel();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    queueMicrotask(() => window.scrollTo({ top: 0, behavior: "smooth" })); // after the layout settles
   }
 
   async function copyText(text) {
