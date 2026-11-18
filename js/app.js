@@ -300,7 +300,7 @@
     const box = $("#choosing");
     const id = state[state.active].id;
     const secondaryOn = state.cantGive && state.wantsSecondary === true;
-    const showAdd = state.cantGive && state.wantsSecondary === false;
+    const showAdd = state.cantGive && state.wantsSecondary !== true; // while the question is open, or after a "No"
     const showReset = !secondaryOn && !!id;
     box.hidden = !(secondaryOn || showAdd || showReset);
     if (box.hidden) return;

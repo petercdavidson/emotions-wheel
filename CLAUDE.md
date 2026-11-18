@@ -72,7 +72,8 @@ Don't add other storage without asking. Update the footer and README if this lis
   6. Start over.
 - **Above the wheel:** the Primary/Secondary switch plus "Remove secondary emotion" while a
   secondary emotion is active. Otherwise "Clear selection" once any word is selected, plus
-  "+ Add a secondary emotion" after a "No". The search bar hides while any word is selected
+  "+ Add a secondary emotion" while "I can't give…" is checked and no secondary
+  emotion is active (it answers the secondary-emotion question with Yes). The search bar hides while any word is selected
   (to encourage "Select a more specific emotion"), so tapping between rings doesn't change
   the layout. On a phone scrolled past the top of the wheel, `beforeChange()` also keeps the
   wheel still on screen if something above it appears or disappears (iOS Safari has no
