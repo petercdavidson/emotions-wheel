@@ -239,7 +239,7 @@
 
   // Shows which emotion a tap on the wheel will set (only when there are two).
   // Above the wheel: the Primary/Secondary switch with "Remove secondary emotion" while a
-  // secondary emotion is active; otherwise "Reset" once an outer-ring word is chosen
+  // secondary emotion is active; otherwise "Clear selection" once an outer-ring word is chosen
   // (the search bar is hidden then), plus "Add a secondary emotion" after a "No".
   function renderChoosing() {
     const box = $("#choosing");
@@ -252,7 +252,7 @@
     if (!secondaryOn) {
       box.innerHTML =
         (showAdd ? `<button class="btn ghost small-btn" data-secondary-ctl="add">+ Add a secondary emotion</button>` : "") +
-        (showReset ? `<button class="btn ghost small-btn" data-reset>Reset</button>` : "");
+        (showReset ? `<button class="btn ghost small-btn" data-clear>Clear selection</button>` : "");
       return;
     }
     const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "none");
@@ -272,7 +272,7 @@
     if (b) setActive(b.dataset.setActive);
     const ctl = e.target.closest("[data-secondary-ctl]");
     if (ctl) answerSecondary(ctl.dataset.secondaryCtl === "add");
-    if (e.target.closest("[data-reset]")) startOver();
+    if (e.target.closest("[data-clear]")) clearSelection();
   });
 
   // Yes / add: the wheel can now select a secondary emotion. No / remove: back to just the primary.
@@ -610,6 +610,16 @@
     if (e.target.id === "start-over") startOver();
   });
 
+  // Clear selection: back to nothing selected, leaving the wheel where it is.
+  function clearSelection() {
+    const typed = state.primary.action.trim() || state.secondary.action.trim();
+    if (typed && !confirm("Clear the selection? What you've typed will be cleared too.")) return;
+    resetState();
+    showActiveOnWheel(); // clears the highlight, unlocks the wheel, shows the search bar again
+    renderPanel();
+  }
+
+  // Start over: clears everything and turns the wheel back to its starting position.
   function startOver() {
     const typed = state.primary.action.trim() || state.secondary.action.trim();
     if (typed && !confirm("Clear everything and start over?")) return;
