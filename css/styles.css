@@ -114,10 +114,6 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
   cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s;
 }
 .basic-label { position: relative; display: inline-block; }
-.cracks {
-  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%237a4a1c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 30 L22 34 L34 22 L58 28 L70 44 L96 40'/%3E%3Cpath d='M34 22 L38 6'/%3E%3Cpath d='M70 44 L66 66 L80 80'/%3E%3Cpath d='M96 40 L118 26 L142 30 L150 12'/%3E%3Cpath d='M142 30 L160 48 L186 44 L200 54'/%3E%3Cpath d='M160 48 L154 70'/%3E%3Cpath d='M118 26 L112 8'/%3E%3Cpath d='M22 34 L14 58 L28 74'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
 .fx { position: absolute; pointer-events: none; font-weight: 800; }
 
 /* Tired: sleepy Z's drift up */
@@ -142,29 +138,23 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 @keyframes rumbleL { 0% { transform: translate(6px, -50%); opacity: 1; } 100% { transform: translate(-16px, -50%); opacity: 0; } }
 @keyframes rumbleR { 0% { transform: translate(-6px, -50%); opacity: 1; } 100% { transform: translate(16px, -50%); opacity: 0; } }
 
-/* Thirsty: the box dries out in the heat. It goes parched, cracks, wilts, and heat waves rise off it */
-.fx-thirsty { animation: parched 2.4s ease-in-out; }
-@keyframes parched {
-  0%,100% { background: var(--bg); }
-  15%,70% { background: hsl(36 72% 70%); color: #4a2e0e; border-color: hsl(30 55% 52%); }
-}
-.fx-thirsty .cracks { animation: crack 2.4s ease-in-out; }
-@keyframes crack { 0%,100% { opacity: 0; } 25%,70% { opacity: .75; } }
-.fx-thirsty .basic-label { transform-origin: 50% 100%; animation: wilt 2.4s ease-in-out; }
-@keyframes wilt {
-  0%,100% { transform: none; letter-spacing: normal; }
-  30%,70% { transform: translateY(4px) scaleY(.82) skewX(-8deg); letter-spacing: .06em; }
+/* Thirsty: dries out for a moment. A dusty tint, the word shrivels, and a little heat rises */
+.fx-thirsty { animation: parched 1.4s ease-in-out; }
+@keyframes parched { 0%,100% { background: var(--bg); } 30%,60% { background: hsl(38 60% 82%); } }
+.fx-thirsty .basic-label { animation: shrivel 1.4s ease-in-out; }
+@keyframes shrivel {
+  0%,100% { transform: none; }
+  30%,60% { transform: scale(.88, .8) translateY(2px); letter-spacing: -.02em; }
 }
 .heat {
-  top: -6px; width: 12px; height: 30px; opacity: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 30'%3E%3Cpath d='M6 1 C1 6 11 10 6 15 C1 20 11 24 6 29' fill='none' stroke='%23e0752a' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
-  animation: heat 1.4s ease-out forwards;
+  top: -4px; width: 9px; height: 22px; opacity: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 30'%3E%3Cpath d='M6 1 C1 6 11 10 6 15 C1 20 11 24 6 29' fill='none' stroke='%23d98a4a' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: heat 1.1s ease-out forwards;
 }
 @keyframes heat {
-  0% { transform: translate(-50%, 0) scaleX(1); opacity: 0; }
-  25% { opacity: 1; }
-  50% { transform: translate(-50%, -16px) scaleX(-1); }
-  100% { transform: translate(-50%, -34px) scaleX(1); opacity: 0; }
+  0% { transform: translate(-50%, 0); opacity: 0; }
+  30% { opacity: .9; }
+  100% { transform: translate(-50%, -24px); opacity: 0; }
 }
 
 /* Triggered: goes red, shakes, and gets a cartoon anger mark */
@@ -205,9 +195,11 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .pop path { fill: hsl(var(--h) 50% var(--l-on)); stroke: var(--line); stroke-width: 1.5; filter: drop-shadow(0 3px 6px rgb(0 0 0 / .28)); }
 .pop text { fill: var(--ink); font-family: system-ui, sans-serif; font-weight: 800; letter-spacing: .02em; }
 .readout {
-  position: absolute; left: 50%; top: -6px; transform: translate(-50%, -100%); z-index: 2;
-  background: var(--ink); color: var(--bg); font-weight: 600; font-size: .95rem;
-  padding: 6px 14px; border-radius: 10px; white-space: nowrap; pointer-events: none;
+  position: absolute; left: 50%; top: -8px; transform: translate(-50%, -100%); z-index: 2;
+  background: hsl(var(--h) 55% var(--l-on)); color: var(--ink); border: 2px solid hsl(var(--h) 45% 50%);
+  font-weight: 800; font-size: 1.8rem; letter-spacing: .03em; line-height: 1.2;
+  padding: 8px 22px; border-radius: 14px; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / .2);
 }
 .cell path { stroke: var(--cell-line); stroke-width: 1.2; transition: fill .15s, opacity .2s; }
 .cell.lvl0 path { fill: hsl(var(--h) var(--s-core) var(--l-core)); }
@@ -329,3 +321,4 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+.still-stuck { margin-top: 14px !important; }

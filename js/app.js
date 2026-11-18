@@ -35,7 +35,7 @@
   // ---------- First: basic needs (pop-up with a short countdown) ----------
   $("#basics").innerHTML = BASICS.map(
     (b) => `<li><button type="button" class="basic" data-fx="${b.toLowerCase()}">
-      <span class="cracks" aria-hidden="true"></span><span class="basic-label">${esc(b)}?</span></button></li>`
+      <span class="basic-label">${esc(b)}?</span></button></li>`
   ).join("");
 
   // Just for fun while the countdown runs. Nothing is selected or recorded.
@@ -70,7 +70,7 @@
     },
     thirsty(btn) {
       restart(btn, "fx-thirsty");
-      [20, 50, 78].forEach((left, i) => spawn(btn, "heat", "", { left: `${left}%`, animationDelay: `${0.25 + i * 0.2}s` }));
+      [38, 62].forEach((left, i) => spawn(btn, "heat", "", { left: `${left}%`, animationDelay: `${0.2 + i * 0.25}s` }));
     },
     triggered(btn) {
       restart(btn, "fx-triggered");
@@ -341,6 +341,7 @@
           ? ""
           : `<button class="btn primary" id="choose-secondary">Select a secondary emotion on the wheel</button>`
       }
+      <p class="still-stuck">If you're still stuck, write it down and bring it to your therapist.</p>
     </section>`;
   }
 

@@ -125,7 +125,7 @@ const NEEDS = {
   },
   Fear: {
     guidance: null,
-    ifNot: "If you're still stuck, write it down and bring it to your therapist.",
+    ifNot: null,
     ideas: [
       "Write down what you need to know.",
       "Separate what you know from what you're imagining.",

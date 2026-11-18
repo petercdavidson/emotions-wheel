@@ -110,15 +110,17 @@ function createWheel(container, { onPick }) {
 
   // A radial label centered between radii lr1 and r2.
   function addLabel(parent, n, lr1, r2, mid, size) {
-    const [x, y] = pt((lr1 + r2) / 2, mid);
-    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central", "font-size": size.toFixed(1) }, parent);
+    // Inner-aligned: every word starts the same distance from its slice's inner edge.
+    const [x, y] = pt(lr1 + PAD, mid);
+    const t = el("text", { "dominant-baseline": "central", "font-size": size.toFixed(1) }, parent);
     t.textContent = n.word.toUpperCase();
     const L = { t, x: x.toFixed(1), y: y.toFixed(1), mid, flipped: null };
     labels.push(L);
     flip(L);
     return L;
   }
-  const innerR = (n) => (n.level === 0 ? 22 : ringOf(n.level)[0]); // core labels stay clear of the very center
+  const PAD = 12; // gap between a slice's inner edge and its word
+  const innerR = (n) => (n.level === 0 ? 30 : ringOf(n.level)[0]); // core words start a little way out from the middle
 
   const order = [...NODES].sort((a, b) => b.level - a.level);
   for (const n of order) {
@@ -136,7 +138,7 @@ function createWheel(container, { onPick }) {
     let len = 0;
     try { len = cells[n.id].L.t.getComputedTextLength(); } catch {}
     LEN20[n.id] = len > 0 ? len : n.word.length * 13.5;
-    const room = ringOf(n.level)[1] - innerR(n) - 16;
+    const room = ringOf(n.level)[1] - innerR(n) - 2 * PAD;
     BASE = Math.min(BASE, (20 * room) / LEN20[n.id]);
   }
   for (const n of NODES) cells[n.id].L.t.setAttribute("font-size", BASE.toFixed(1));
@@ -171,7 +173,7 @@ function createWheel(container, { onPick }) {
     const size = BASE * scale;
     const [r1, ringEnd] = ringOf(n.level);
     const lr1 = innerR(n);
-    const r2 = Math.max(ringEnd, lr1 + (LEN20[n.id] * size) / 20 + 28);
+    const r2 = Math.max(ringEnd, lr1 + (LEN20[n.id] * size) / 20 + 2 * PAD + 4);
     const mid = (n.a1 + n.a2) / 2;
     const w = n.a2 - n.a1;
     const needed = (((size * 1.6) / (lr1 + 8)) * 180) / Math.PI; // wide enough for the letters
@@ -197,6 +199,8 @@ function createWheel(container, { onPick }) {
     if (flipped === L.flipped) return;
     L.flipped = flipped;
     const a = flipped ? L.mid + 90 : L.mid - 90;
+    // Reading outward from the inner edge either way up.
+    L.t.setAttribute("text-anchor", flipped ? "end" : "start");
     L.t.setAttribute("transform", `translate(${L.x} ${L.y}) rotate(${a.toFixed(1)})`);
   }
   function setRot(r) {
@@ -250,7 +254,10 @@ function createWheel(container, { onPick }) {
   const isMouse = (e) => e.pointerType === "mouse";
   const showReadout = (n) => {
     readout.hidden = !n;
-    if (n) readout.textContent = pathOf(n.id).map((x) => x.word).join(" › ");
+    if (n) {
+      readout.textContent = n.word;
+      readout.style.setProperty("--h", hue[n.core]);
+    }
   };
 
   svg.addEventListener("pointerdown", (e) => {
