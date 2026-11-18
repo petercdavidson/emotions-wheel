@@ -35,7 +35,7 @@
   // ---------- First: basic needs (pop-up with a short countdown) ----------
   $("#basics").innerHTML = BASICS.map(
     (b) => `<li><button type="button" class="basic" data-fx="${b.toLowerCase()}">
-      <span class="water" aria-hidden="true"></span><span class="basic-label">${esc(b)}?</span></button></li>`
+      <span class="cracks" aria-hidden="true"></span><span class="basic-label">${esc(b)}?</span></button></li>`
   ).join("");
 
   // Just for fun while the countdown runs. Nothing is selected or recorded.
@@ -45,7 +45,7 @@
     s.setAttribute("aria-hidden", "true");
     s.textContent = text;
     Object.assign(s.style, style);
-    (cls === "bubble" ? $(".water", btn) : btn).appendChild(s);
+    btn.appendChild(s);
     s.addEventListener("animationend", () => s.remove());
     setTimeout(() => s.remove(), 3000);
   }
@@ -70,8 +70,7 @@
     },
     thirsty(btn) {
       restart(btn, "fx-thirsty");
-      for (let i = 0; i < 6; i++)
-        spawn(btn, "bubble", "", { left: `${12 + Math.random() * 76}%`, animationDelay: `${0.3 + Math.random() * 0.8}s`, width: `${5 + Math.random() * 7}px` });
+      [20, 50, 78].forEach((left, i) => spawn(btn, "heat", "", { left: `${left}%`, animationDelay: `${0.25 + i * 0.2}s` }));
     },
     triggered(btn) {
       restart(btn, "fx-triggered");
@@ -163,6 +162,10 @@
     const id = state[state.active].id;
     wheel.setHighlight(id ? pathOf(id).map((p) => p.id) : [], id);
     if (id) wheel.focus(id);
+    // Once an outer-ring word is chosen, the wheel stays put.
+    const lockedIn = !!id && BY_ID[id].level === 2;
+    wheel.setLocked(lockedIn);
+    $("#spin-hint").hidden = lockedIn;
     renderChoosing();
   }
 

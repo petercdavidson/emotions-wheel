@@ -4,7 +4,7 @@
 
 const SEG = 5; // degrees per outer-ring word (72 words x 5 = 360)
 const START = -40; // where "Hurt" begins, in degrees clockwise from 12 o'clock
-const R = { core: 150, mid: 305, outer: 490, grip: 532 };
+const R = { core: 140, mid: 310, outer: 490, grip: 532 };
 const FOCUS_ANGLE = 90; // 3 o'clock: where a selected slice is turned to
 
 // ---- Index ---------------------------------------------------------------
@@ -92,6 +92,7 @@ function createWheel(container, { onPick }) {
     "aria-label": "Emotions wheel. Use the search box or the list below to choose a word.",
   });
   const rotor = el("g", { class: "rotor" }, svg);
+  container.appendChild(svg); // in the page early, so words can be measured
   const cells = {};
   const labels = []; // every label that needs to stay upright as the wheel turns
   const hue = Object.fromEntries(WHEEL.map((c) => [c.name, c.hue]));
@@ -107,32 +108,40 @@ function createWheel(container, { onPick }) {
 
   const ringOf = (level) => (level === 0 ? [0, R.core] : level === 1 ? [R.core, R.mid] : [R.mid, R.outer]);
 
-  // A radial label, sized to fit within [r1, r2] and the slice's width.
-  function addLabel(parent, n, r1, r2, a1, a2, maxFont) {
-    const mid = (a1 + a2) / 2;
-    const lr1 = n.level === 0 ? 22 : r1; // keep core labels clear of the very center
+  // A radial label centered between radii lr1 and r2.
+  function addLabel(parent, n, lr1, r2, mid, size) {
     const [x, y] = pt((lr1 + r2) / 2, mid);
-    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central" }, parent);
+    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central", "font-size": size.toFixed(1) }, parent);
     t.textContent = n.word.toUpperCase();
-    const byLength = (r2 - lr1 - 18) / (n.word.length * 0.66);
-    const byWidth = (lr1 + 14) * ((a2 - a1) * Math.PI / 180) * 0.8;
-    const size = n.level === 0 ? Math.min(maxFont, byLength) : Math.min(maxFont, byLength, byWidth);
-    t.setAttribute("font-size", size.toFixed(1));
     const L = { t, x: x.toFixed(1), y: y.toFixed(1), mid, flipped: null };
     labels.push(L);
     flip(L);
     return L;
   }
+  const innerR = (n) => (n.level === 0 ? 22 : ringOf(n.level)[0]); // core labels stay clear of the very center
 
   const order = [...NODES].sort((a, b) => b.level - a.level);
   for (const n of order) {
     const [r1, r2] = ringOf(n.level);
     const g = el("g", { class: `cell lvl${n.level}`, "data-id": n.id, style: `--h:${hue[n.core]}` }, rotor);
     el("path", { d: sectorPath(r1, r2, n.a1, n.a2) }, g);
-    addLabel(g, n, r1, r2, n.a1, n.a2, [26, 23, 21][n.level]);
+    cells[n.id] = { g, L: addLabel(g, n, innerR(n), r2, (n.a1 + n.a2) / 2, 20) };
     el("title", {}, g).textContent = pathOf(n.id).map((p) => p.word).join(" › ");
-    cells[n.id] = g;
   }
+  // Every word on the wheel gets the same size, like the printed wheel:
+  // the largest size at which the longest word still fits its ring.
+  const LEN20 = {}; // each word's length at size 20
+  let BASE = 21;
+  for (const n of NODES) {
+    let len = 0;
+    try { len = cells[n.id].L.t.getComputedTextLength(); } catch {}
+    LEN20[n.id] = len > 0 ? len : n.word.length * 13.5;
+    const room = ringOf(n.level)[1] - innerR(n) - 16;
+    BASE = Math.min(BASE, (20 * room) / LEN20[n.id]);
+  }
+  for (const n of NODES) cells[n.id].L.t.setAttribute("font-size", BASE.toFixed(1));
+  for (const id in cells) cells[id] = cells[id].g;
+
   const dividers = el("g", { class: "dividers" }, rotor);
   for (const c of NODES.filter((n) => n.level === 0)) {
     const [x, y] = pt(R.outer, c.a1);
@@ -143,7 +152,6 @@ function createWheel(container, { onPick }) {
   // They ignore the pointer, so they never get in the way of tapping.
   const pickLayer = el("g", { class: "pop-layer" }, rotor);
   const hoverLayer = el("g", { class: "pop-layer" }, rotor);
-  container.appendChild(svg);
 
   // Shows the word under your finger while sliding on a touch screen.
   const readout = document.createElement("div");
@@ -152,28 +160,32 @@ function createWheel(container, { onPick }) {
   container.appendChild(readout);
 
   // ---- Enlarged slices ----
-  // A slice grows sideways within its own ring. Outer-ring slices also
-  // stick out past the edge of the wheel. Nothing crosses into another ring.
-  function drawPop(layer, n, big) {
+  // Every word grows by the same amount. A slice may grow sideways within its
+  // own ring and outward past it, but never inward over the ring inside it.
+  const HOVER_SCALE = 1.6;
+  const PICK_SCALE = 1.3;
+  function drawPop(layer, n, scale) {
     for (const L of [...labels]) if (layer.contains(L.t)) labels.splice(labels.indexOf(L), 1);
     layer.replaceChildren();
-    if (!n || n.level === 0) return;
-    const w = n.a2 - n.a1;
+    if (!n) return;
+    const size = BASE * scale;
+    const [r1, ringEnd] = ringOf(n.level);
+    const lr1 = innerR(n);
+    const r2 = Math.max(ringEnd, lr1 + (LEN20[n.id] * size) / 20 + 28);
     const mid = (n.a1 + n.a2) / 2;
-    const r1 = n.level === 1 ? R.core : R.mid;
-    const narrow = svg.getBoundingClientRect().width < 500; // phones: keep it on screen
-    const r2 = n.level === 1 ? R.mid : big ? R.outer + (narrow ? 60 : 150) : R.outer + 40;
-    const nw = n.level === 1 ? w * (big ? 2 : 1.4) : w * (big ? 2.6 : 1.7);
-    const g = el("g", { class: `pop lvl${n.level} ${big ? "big" : ""}`, style: `--h:${hue[n.core]}` }, layer);
+    const w = n.a2 - n.a1;
+    const needed = (((size * 1.6) / (lr1 + 8)) * 180) / Math.PI; // wide enough for the letters
+    const nw = n.level === 0 ? w : Math.max(w, needed);
+    const g = el("g", { class: `pop lvl${n.level}`, style: `--h:${hue[n.core]}` }, layer);
     el("path", { d: sectorPath(r1, r2, mid - nw / 2, mid + nw / 2) }, g);
-    addLabel(g, n, r1, r2, mid - nw / 2, mid + nw / 2, big ? 46 : 30);
+    addLabel(g, n, lr1, r2, mid, size);
   }
   let hovered = null;
   let picked = null;
   function setHovered(n) {
     if (n === hovered) return;
     hovered = n;
-    drawPop(hoverLayer, n, true);
+    drawPop(hoverLayer, n, HOVER_SCALE);
     for (const g of Object.values(cells)) g.classList.remove("hover");
     if (n) cells[n.id].classList.add("hover");
   }
@@ -192,7 +204,9 @@ function createWheel(container, { onPick }) {
     rotor.setAttribute("transform", `rotate(${rot.toFixed(2)})`);
     labels.forEach(flip);
   }
-  function animateTo(target) {
+  let locked = false; // when true, the wheel resists spinning and springs back
+  let home = 0; // where the wheel rests when locked
+  function animateTo(target, bounce) {
     cancelAnimationFrame(anim);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const from = rot;
@@ -201,7 +215,9 @@ function createWheel(container, { onPick }) {
     const t0 = performance.now();
     const step = (now) => {
       const p = Math.min(1, (now - t0) / dur);
-      const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      const e = bounce
+        ? 1 + 2.7 * Math.pow(p - 1, 3) + 1.7 * Math.pow(p - 1, 2) // overshoot a little, then settle
+        : p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       setRot(from + (target - from) * e);
       if (p < 1) anim = requestAnimationFrame(step);
     };
@@ -212,6 +228,7 @@ function createWheel(container, { onPick }) {
     if (!n) return;
     let target = FOCUS_ANGLE - (n.a1 + n.a2) / 2;
     target += Math.round((rot - target) / 360) * 360; // take the shortest way round
+    home = target;
     animateTo(target);
   }
   setRot(0);
@@ -272,7 +289,11 @@ function createWheel(container, { onPick }) {
     if (d > 180) d -= 360;
     if (d < -180) d += 360;
     down.last = p.a;
-    setRot(rot + d);
+    if (locked) {
+      // Resist: follow the drag only a little, like pulling against a spring.
+      down.pull = (down.pull || 0) + d;
+      setRot(home + 14 * Math.tanh(down.pull / 40));
+    } else setRot(rot + d);
   });
 
   svg.addEventListener("pointerup", (e) => {
@@ -281,6 +302,7 @@ function createWheel(container, { onPick }) {
     if (down.mode === "scrub") chosen = hovered;
     else if (!down.moved) chosen = down.node;
     const wasMouse = down.mode === "mouse";
+    if (down.moved && locked) animateTo(home, true);
     down = null;
     svg.classList.remove("spinning");
     showReadout(null);
@@ -289,6 +311,7 @@ function createWheel(container, { onPick }) {
     if (wasMouse) setHovered(nodeAt(local(e)));
   });
   svg.addEventListener("pointercancel", () => {
+    if (down && down.moved && locked) animateTo(home, true);
     down = null;
     svg.classList.remove("spinning");
     showReadout(null);
@@ -307,9 +330,13 @@ function createWheel(container, { onPick }) {
       for (const id of ids) cells[id] && cells[id].classList.add("on");
       svg.classList.toggle("has-on", ids.length > 0);
       picked = leaf ? BY_ID[leaf] : null;
-      drawPop(pickLayer, picked, false);
+      // Only outer-ring selections stay enlarged; inner ones go back to normal size.
+      drawPop(pickLayer, picked && picked.level === 2 ? picked : null, PICK_SCALE);
     },
     focus,
+    setLocked(v) {
+      locked = v;
+    },
     reset: () => animateTo(0),
   };
 }
