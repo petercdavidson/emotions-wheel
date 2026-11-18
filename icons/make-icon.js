@@ -18,11 +18,13 @@ function wheel(R) {
   let s = '', a = -40;
   const lines = [];
   for (const [, h, w] of CORES) {
-    for (const [r1, r2, l] of rings) s += `<path d="${sector(r1, r2, a, a + w)}" fill="hsl(${h} 62% ${l}%)"/>`;
+    for (const [r1, r2] of rings) s += `<path d="${sector(r1, r2, a, a + w)}" fill="#fff"/>`; // black and white, like the original
     lines.push(a);
     a += w;
   }
-  const ink = '#2b2a27', sw = R * 0.035;
+  const ink = '#1a1a1a', sw = R * 0.035;
+  s += `<circle r="${R * 0.36}" fill="none" stroke="${ink}" stroke-width="${sw * 0.7}"/>`;
+  s += `<circle r="${R * 0.68}" fill="none" stroke="${ink}" stroke-width="${sw * 0.7}"/>`;
   for (const d of lines) { const [x, y] = pt(R, d); s += `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round"/>`; }
   s += `<circle r="${R}" fill="none" stroke="${ink}" stroke-width="${sw * 1.4}"/>`;
   return s;
@@ -32,4 +34,4 @@ fs.writeFileSync(out + '/icon.svg',
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">${wheel(47)}</svg>\n`);
 // Home-screen icon: wheel on the site's cream background, inside the safe zone phones crop to.
 fs.writeFileSync(out + '/icon-square.svg',
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100"><rect x="-50" y="-50" width="100" height="100" fill="#f7f4ec"/>${wheel(38)}</svg>\n`);
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100"><rect x="-50" y="-50" width="100" height="100" fill="#fff"/>${wheel(38)}</svg>\n`);
