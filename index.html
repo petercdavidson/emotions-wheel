@@ -28,9 +28,9 @@
       <section id="app">
         <div class="wheel-layout">
           <div class="wheel-col">
-            <div class="search">
-              <label for="wheel-search" class="visually-hidden">Find a word</label>
-              <input id="wheel-search" type="search" list="all-words" placeholder="Find a word…" autocomplete="off">
+            <div class="search" id="search">
+              <label for="wheel-search" class="visually-hidden">Search for an emotion</label>
+              <input id="wheel-search" type="search" list="all-words" placeholder="Search for an emotion…" autocomplete="off">
               <datalist id="all-words"></datalist>
             </div>
             <div id="choosing" class="choosing" hidden></div>
@@ -76,7 +76,7 @@
     <div class="gate card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
       <h2 id="gate-title">Before you start, are you…</h2>
       <ul class="basics" id="basics"></ul>
-      <p class="gate-ask">These needs have to be met first, if possible.</p>
+      <p class="gate-ask" id="gate-ask" aria-live="polite">These needs have to be met first, if possible.</p>
       <button class="btn primary" id="gate-go" disabled>Continue</button>
     </div>
   </div>

@@ -82,8 +82,29 @@
   };
   $("#basics").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-fx]");
-    if (btn) EFFECTS[btn.dataset.fx](btn);
+    if (!btn) return;
+    EFFECTS[btn.dataset.fx](btn);
+    suggest(btn.dataset.fx);
   });
+
+  // Tapping a condition swaps the line under the buttons for a suggestion,
+  // which fades away once the animation has played, leaving the space blank.
+  const SUGGEST = {
+    tired: ["Rest!", 1600],
+    hungry: ["Eat something!", 1100],
+    thirsty: ["Drink some water!", 1200],
+    triggered: ["Take a break!", 1100],
+  };
+  function suggest(kind) {
+    const ask = $("#gate-ask");
+    const [text, ms] = SUGGEST[kind];
+    clearTimeout(suggest._t);
+    ask.textContent = text;
+    ask.className = "gate-ask";
+    void ask.offsetWidth; // replay the pop-in for each tap
+    ask.classList.add("suggestion");
+    suggest._t = setTimeout(() => ask.classList.add("fade"), ms);
+  }
 
   (function countdown() {
     const go = $("#gate-go");
@@ -180,6 +201,7 @@
     // Once an outer-ring word is chosen, the wheel stays put.
     const lockedIn = !!id && BY_ID[id].level === 2;
     wheel.setLocked(lockedIn);
+    $("#search").hidden = lockedIn; // no need to search once an outer-ring word is chosen
     // On touch screens the wheel only spins while nothing is selected.
     const touch = window.matchMedia("(pointer: coarse)").matches;
     $("#spin-hint").hidden = lockedIn || (touch && !!id);

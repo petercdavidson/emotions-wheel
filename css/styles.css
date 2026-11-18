@@ -170,7 +170,13 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
   100% { opacity: 0; }
 }
 
-.gate-ask { font-size: 1.1rem; margin: 0 0 18px; }
+.gate-ask {
+  font-size: 1.1rem; margin: 0 0 18px; min-height: 2.6rem; /* keeps the layout steady as the text changes */
+  display: flex; align-items: center; justify-content: center; transition: opacity .5s ease;
+}
+.gate-ask.suggestion { font-size: 1.35rem; font-weight: 800; color: var(--accent); animation: pop-in .25s ease-out; }
+.gate-ask.fade { opacity: 0; }
+@keyframes pop-in { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
 .gate .btn { min-width: 220px; font-size: 1.05rem; padding: 12px 20px; }
 
 /* ---------- Wheel ---------- */
