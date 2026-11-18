@@ -35,25 +35,28 @@
       <section id="app">
         <div class="wheel-layout">
           <div class="wheel-col">
-            <div class="search" id="search">
+            <div class="search" id="search" data-flip="search">
               <label for="wheel-search" class="visually-hidden">Search for an emotion</label>
-              <input id="wheel-search" type="search" placeholder="Search for an emotion…" autocomplete="off"
-                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
-              <ul id="search-results" class="search-results" role="listbox" hidden></ul>
+              <div class="search-box">
+                <input id="wheel-search" type="search" placeholder="Search for an emotion…" autocomplete="off"
+                  role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
+                <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden>×</button>
+              </div>
+              <ul id="search-results" class="search-results" role="listbox" hidden data-flip="results"></ul>
             </div>
-            <div id="choosing" class="choosing" hidden></div>
-            <div id="main-wheel" class="wheel"></div>
-            <p class="hint" id="spin-hint"><span aria-hidden="true">↻</span> Drag the outer edge to spin the wheel.</p>
+            <div id="choosing" class="choosing" hidden data-flip="choosing"></div>
+            <div id="main-wheel" class="wheel" data-flip="wheel"></div>
+            <p class="hint" id="spin-hint" data-flip="hint"><span aria-hidden="true">↻</span> Drag the outer edge to spin the wheel.</p>
           </div>
           <div id="panel" class="panel" aria-live="polite"></div>
         </div>
 
-        <details class="card fold">
+        <details class="card fold" data-flip="list">
           <summary>Browse as a list</summary>
           <div id="word-list"></div>
         </details>
 
-        <details class="card fold">
+        <details class="card fold" data-flip="about">
           <summary>About this practice</summary>
           <div class="prose">
             <p>Each emotion on the wheel is asking for something:</p>
@@ -69,7 +72,7 @@
       </section>
     </main>
 
-    <footer class="site-footer">
+    <footer class="site-footer" data-flip="footer">
       <div class="toggles">
         <label class="mono-toggle"><input type="checkbox" id="dark"> Dark mode</label>
         <label class="mono-toggle"><input type="checkbox" id="mono"> Olympian Mode</label>

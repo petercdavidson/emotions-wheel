@@ -148,6 +148,45 @@
   if (document.documentElement.classList.contains("checked")) closeCheck();
   else openCheck();
 
+  // ---------- Smooth layout changes ----------
+  // Call beforeChange() just before showing, hiding or redrawing parts of the page.
+  // It notes where each block is; once the change is made, blocks that moved glide
+  // from their old spot to the new one, and newly shown blocks fade in.
+  const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const visible = (el) => el.getClientRects().length > 0;
+  function flipKey(el) {
+    if (el.dataset.flip) return el.dataset.flip;
+    if (el.classList.contains("emo")) return "emo-" + el.dataset.which;
+    return el.classList[el.classList.contains("card") ? 1 : 0] || el.tagName;
+  }
+  const flipBlocks = () => [...$$("[data-flip]"), ...$$("#panel > *")].filter(visible);
+  let flipBefore = null;
+  function beforeChange() {
+    if (flipBefore || reduceMotion()) return;
+    flipBefore = new Map(flipBlocks().map((el) => [flipKey(el), el.getBoundingClientRect().top]));
+    queueMicrotask(() => {
+      const before = flipBefore;
+      flipBefore = null;
+      for (const el of flipBlocks()) {
+        const key = flipKey(el);
+        el.style.transition = "none";
+        el.style.transform = "";
+        if (!before.has(key)) {
+          el.classList.remove("flip-enter");
+          void el.offsetWidth;
+          el.classList.add("flip-enter"); // newly shown: fade in
+          continue;
+        }
+        const dy = before.get(key) - el.getBoundingClientRect().top;
+        if (Math.abs(dy) < 1) continue;
+        el.style.transform = `translateY(${dy}px)`; // start where it was...
+        void el.offsetWidth;
+        el.style.transition = "transform .28s ease";
+        el.style.transform = ""; // ...and glide to where it is now
+      }
+    });
+  }
+
   // ---------- State ----------
   let state;
   function resetState() {
@@ -193,6 +232,7 @@
     if (which === "secondary" && prev && BY_ID[prev].core !== BY_ID[id].core) state.secondary.cant = false;
     state[which].id = id;
     state.active = which;
+    clearSearch(); // an emotion is chosen, so the suggestions are done
     showActiveOnWheel();
     renderPanel();
   }
@@ -223,6 +263,7 @@
     // Once an outer-ring word is chosen, the wheel stays put.
     const lockedIn = !!id && BY_ID[id].level === 2;
     wheel.setLocked(lockedIn);
+    beforeChange();
     $("#search").hidden = lockedIn; // no need to search once an outer-ring word is chosen
     // On touch screens the wheel only spins while nothing is selected.
     const touch = window.matchMedia("(pointer: coarse)").matches;
@@ -242,6 +283,7 @@
   // secondary emotion is active; otherwise "Clear selection" once an outer-ring word is chosen
   // (the search bar is hidden then), plus "Add a secondary emotion" after a "No".
   function renderChoosing() {
+    beforeChange();
     const box = $("#choosing");
     const id = state[state.active].id;
     const secondaryOn = state.cantGive && state.wantsSecondary === true;
@@ -314,6 +356,7 @@
     if (!q) return closeResults();
     matches = findMatches(q);
     cursor = matches.length ? 0 : -1;
+    beforeChange();
     results.innerHTML = matches.length
       ? matches
           .map(({ n, at }, i) => {
@@ -336,6 +379,7 @@
     else searchInput.removeAttribute("aria-activedescendant");
   }
   function closeResults() {
+    beforeChange();
     matches = [];
     results.hidden = true;
     results.innerHTML = "";
@@ -343,12 +387,24 @@
     searchInput.removeAttribute("aria-activedescendant");
   }
   function choose(id) {
-    searchInput.value = "";
-    closeResults();
     searchInput.blur();
-    pick(id);
+    pick(id); // also clears the search
   }
-  searchInput.addEventListener("input", showResults);
+  // Clear the typed text and the suggestions.
+  function clearSearch() {
+    if (!searchInput.value && results.hidden) return;
+    searchInput.value = "";
+    $("#search-clear").hidden = true;
+    closeResults();
+  }
+  $("#search-clear").addEventListener("click", () => {
+    clearSearch();
+    searchInput.focus();
+  });
+  searchInput.addEventListener("input", () => {
+    $("#search-clear").hidden = !searchInput.value;
+    showResults();
+  });
   searchInput.addEventListener("focus", showResults);
   searchInput.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -360,7 +416,7 @@
       e.preventDefault();
       if (matches[cursor]) choose(matches[cursor].n.id);
     } else if (e.key === "Escape") {
-      closeResults();
+      clearSearch();
     }
   });
   // Keep the box focused while a suggestion is being tapped or clicked.
@@ -369,7 +425,6 @@
     const li = e.target.closest("[data-node]");
     if (li) choose(li.dataset.node);
   });
-  searchInput.addEventListener("blur", () => setTimeout(closeResults, 150));
 
   $("#word-list").innerHTML = WHEEL.map(
     (core) => `
@@ -537,6 +592,7 @@
   }
 
   function renderPanel() {
+    beforeChange();
     if (!state.primary.id) {
       panel.innerHTML = `<div class="card empty"><p>Select an emotion on the wheel.</p></div>`;
       renderChoosing();
@@ -567,6 +623,7 @@
     const which = card.dataset.which;
     state[which].action = e.target.value;
     $("#full-text").textContent = fullText();
+    beforeChange();
     $(".cta", card).hidden = thoughtDone(which);
     $(".cant", card).hidden = !!e.target.value.trim(); // typing a solution replaces the "can't" option
     $(".copy").hidden = !showWhole();

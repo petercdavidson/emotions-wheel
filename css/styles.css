@@ -229,11 +229,19 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
   border: 1px solid var(--soft-line); border-radius: 10px; background: var(--surface); color: var(--ink);
 }
 .search { position: relative; }
+.search-box { position: relative; }
+.search-box input { padding-right: 44px; }
+.search-box input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search-clear {
+  position: absolute; right: 6px; top: 5px; width: 34px; height: 34px; border-radius: 50%;
+  border: 0; background: transparent; color: var(--muted); font-size: 1.5rem; line-height: 1; cursor: pointer;
+}
+.search-clear:hover { background: var(--soft-line); color: var(--ink); }
+/* Suggestions sit in the page (pushing the wheel down) so they can stay open without covering it */
 .search-results {
-  position: absolute; left: 0; right: 0; top: calc(100% - 6px); z-index: 5;
-  list-style: none; margin: 0; padding: 6px; max-height: 340px; overflow-y: auto;
+  list-style: none; margin: -4px 0 10px; padding: 6px; max-height: 340px; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--soft-line); border-radius: 12px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / .14);
+  box-shadow: 0 2px 8px rgb(0 0 0 / .06);
 }
 .search-results li { display: flex; align-items: baseline; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
 .search-results li.on, .search-results li[role=option]:hover { background: hsl(var(--h) 55% 50% / .14); }
@@ -358,4 +366,8 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .small-btn { padding: 6px 12px; font-size: .85rem; }
 
 .checked #gate { display: none; } /* opening check skipped, set before the page draws */
+/* Smooth layout changes: newly shown blocks fade in */
+.flip-enter { animation: flip-enter .25s ease-out; }
+@keyframes flip-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
 .start-over-row { display: flex; justify-content: center; margin: 4px 0 16px; }
