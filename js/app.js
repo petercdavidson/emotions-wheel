@@ -363,7 +363,6 @@
             : ""
         }
         <label class="check-inline cant" ${s.action.trim() ? "hidden" : ""}>
-          ${showAction ? `<span class="or">or</span>` : ""}
           <input type="checkbox" data-cant ${cant ? "checked" : ""}>
           <span>I can't give this emotion what it wants right now</span></label>
         ${
