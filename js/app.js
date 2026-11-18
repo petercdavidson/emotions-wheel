@@ -263,16 +263,82 @@
   }
 
   // ---------- Search & list ----------
-  const uniqueWords = [...new Set(NODES.map((n) => n.word))].sort();
-  $("#all-words").innerHTML = uniqueWords.map((w) => `<option value="${esc(w)}">`).join("");
-  $("#wheel-search").addEventListener("input", (e) => {
-    const matches = nodesForWord(e.target.value);
-    if (matches.length) {
-      pick(matches[0].id);
-      e.target.value = "";
-      e.target.blur();
+  // Suggestions while typing. Matches anywhere in a word ("shame" finds "Ashamed"),
+  // with words that start with what you typed listed first.
+  const searchInput = $("#wheel-search");
+  const results = $("#search-results");
+  let matches = [];
+  let cursor = -1; // highlighted suggestion, for the arrow keys
+
+  function findMatches(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    return NODES.map((n) => ({ n, at: n.word.toLowerCase().indexOf(q) }))
+      .filter((m) => m.at >= 0)
+      .sort((a, b) => (b.at === 0) - (a.at === 0) || a.n.word.localeCompare(b.n.word) || a.n.level - b.n.level)
+      .slice(0, 8);
+  }
+  function showResults() {
+    const q = searchInput.value.trim();
+    if (!q) return closeResults();
+    matches = findMatches(q);
+    cursor = matches.length ? 0 : -1;
+    results.innerHTML = matches.length
+      ? matches
+          .map(({ n, at }, i) => {
+            const w = n.word;
+            const word = `${esc(w.slice(0, at))}<b>${esc(w.slice(at, at + q.length))}</b>${esc(w.slice(at + q.length))}`;
+            const where = pathOf(n.id).slice(0, -1).map((x) => x.word).join(" › ") || "center emotion";
+            return `<li role="option" id="sr-${i}" data-node="${esc(n.id)}" style="--h:${CORE[n.core].hue}">
+              <span class="dot" aria-hidden="true"></span><span class="sr-word">${word}</span>
+              <span class="sr-where">${esc(where)}</span></li>`;
+          })
+          .join("")
+      : `<li class="sr-none">No matching emotion</li>`;
+    results.hidden = false;
+    searchInput.setAttribute("aria-expanded", "true");
+    highlight();
+  }
+  function highlight() {
+    $$("[role=option]", results).forEach((li, i) => li.classList.toggle("on", i === cursor));
+    if (cursor >= 0) searchInput.setAttribute("aria-activedescendant", `sr-${cursor}`);
+    else searchInput.removeAttribute("aria-activedescendant");
+  }
+  function closeResults() {
+    matches = [];
+    results.hidden = true;
+    results.innerHTML = "";
+    searchInput.setAttribute("aria-expanded", "false");
+    searchInput.removeAttribute("aria-activedescendant");
+  }
+  function choose(id) {
+    searchInput.value = "";
+    closeResults();
+    searchInput.blur();
+    pick(id);
+  }
+  searchInput.addEventListener("input", showResults);
+  searchInput.addEventListener("focus", showResults);
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!matches.length) return;
+      e.preventDefault();
+      cursor = (cursor + (e.key === "ArrowDown" ? 1 : -1) + matches.length) % matches.length;
+      highlight();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (matches[cursor]) choose(matches[cursor].n.id);
+    } else if (e.key === "Escape") {
+      closeResults();
     }
   });
+  // Keep the box focused while a suggestion is being tapped or clicked.
+  results.addEventListener("mousedown", (e) => e.preventDefault());
+  results.addEventListener("click", (e) => {
+    const li = e.target.closest("[data-node]");
+    if (li) choose(li.dataset.node);
+  });
+  searchInput.addEventListener("blur", () => setTimeout(closeResults, 150));
 
   $("#word-list").innerHTML = WHEEL.map(
     (core) => `

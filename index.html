@@ -34,8 +34,9 @@
           <div class="wheel-col">
             <div class="search" id="search">
               <label for="wheel-search" class="visually-hidden">Search for an emotion</label>
-              <input id="wheel-search" type="search" list="all-words" placeholder="Search for an emotion…" autocomplete="off">
-              <datalist id="all-words"></datalist>
+              <input id="wheel-search" type="search" placeholder="Search for an emotion…" autocomplete="off"
+                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results">
+              <ul id="search-results" class="search-results" role="listbox" hidden></ul>
             </div>
             <div id="choosing" class="choosing" hidden></div>
             <div id="main-wheel" class="wheel"></div>

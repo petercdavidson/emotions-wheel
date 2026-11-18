@@ -228,6 +228,20 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
   width: 100%; font: inherit; padding: 10px 14px; margin-bottom: 10px;
   border: 1px solid var(--soft-line); border-radius: 10px; background: var(--surface); color: var(--ink);
 }
+.search { position: relative; }
+.search-results {
+  position: absolute; left: 0; right: 0; top: calc(100% - 6px); z-index: 5;
+  list-style: none; margin: 0; padding: 6px; max-height: 340px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--soft-line); border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .14);
+}
+.search-results li { display: flex; align-items: baseline; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.search-results li.on, .search-results li[role=option]:hover { background: hsl(var(--h) 55% 50% / .14); }
+.search-results .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; align-self: center; background: hsl(var(--h) 55% 62%); }
+.sr-word { font-weight: 500; }
+.sr-word b { font-weight: 800; }
+.sr-where { margin-left: auto; color: var(--muted); font-size: .85rem; text-align: right; }
+.sr-none { color: var(--muted); cursor: default !important; }
 .hint { text-align: center; color: var(--muted); font-size: .9rem; margin: 6px 0 0; }
 
 /* Which emotion the wheel sets (when there are two) */
