@@ -25,7 +25,7 @@ An interactive emotions wheel and daily check-in, for building a richer vocabula
 
 ## Privacy
 
-Nothing is saved: no accounts, no storage, no analytics. What you type exists only while the page is open, and reloading the page clears it.
+Nothing you type is saved: no accounts, no analytics. What you type exists only while the page is open, and reloading the page clears it. The browser remembers only three small things on your own device: the Dark mode and Olympian Mode settings, and when you last clicked Continue on the opening check (so it can skip the check for 15 minutes).
 
 ## How it's built
 

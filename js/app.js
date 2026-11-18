@@ -106,25 +106,47 @@
     suggest._t = setTimeout(() => ask.classList.add("fade"), ms);
   }
 
-  (function countdown() {
+  // The check, with a short countdown before Continue unlocks.
+  const CHECK_KEY = "ew.checked";
+  let countdownTimer = null;
+  function openCheck() {
     const go = $("#gate-go");
+    const ask = $("#gate-ask");
+    clearTimeout(countdownTimer);
+    clearTimeout(suggest._t);
+    ask.className = "gate-ask";
+    ask.textContent = "These needs have to be met first, if possible.";
+    document.documentElement.classList.remove("checked");
+    $("#gate").hidden = false;
+    $(".page").inert = true;
+    go.disabled = true;
     let n = 5;
     const tick = () => {
       if (n > 0) {
         go.textContent = `Continue in ${n}…`;
         n--;
-        setTimeout(tick, 1000);
+        countdownTimer = setTimeout(tick, 1000);
       } else {
         go.textContent = "Continue";
         go.disabled = false;
       }
     };
     tick();
-    go.addEventListener("click", () => {
-      $("#gate").hidden = true;
-      $(".page").inert = false;
-    });
-  })();
+  }
+  function closeCheck() {
+    clearTimeout(countdownTimer);
+    $("#gate").hidden = true;
+    $(".page").inert = false;
+  }
+  $("#gate-go").addEventListener("click", () => {
+    closeCheck();
+    try {
+      localStorage.setItem(CHECK_KEY, String(Date.now())); // skip it for the next 15 minutes
+    } catch {}
+  });
+  $("#show-check").addEventListener("click", openCheck);
+  if (document.documentElement.classList.contains("checked")) closeCheck();
+  else openCheck();
 
   // ---------- State ----------
   let state;
@@ -216,13 +238,21 @@
   }
 
   // Shows which emotion a tap on the wheel will set (only when there are two).
+  // Above the wheel: the Primary/Secondary switch with "Remove secondary emotion" while a
+  // secondary emotion is active; otherwise "Reset" once an outer-ring word is chosen
+  // (the search bar is hidden then), plus "Add a secondary emotion" after a "No".
   function renderChoosing() {
     const box = $("#choosing");
-    const show = state.cantGive && state.wantsSecondary !== null;
-    box.hidden = !show;
-    if (!show) return;
-    if (state.wantsSecondary === false) {
-      box.innerHTML = `<button class="btn ghost small-btn" data-secondary-ctl="add">+ Add a secondary emotion</button>`;
+    const id = state[state.active].id;
+    const secondaryOn = state.cantGive && state.wantsSecondary === true;
+    const showAdd = state.cantGive && state.wantsSecondary === false;
+    const showReset = !secondaryOn && !!id && BY_ID[id].level === 2;
+    box.hidden = !(secondaryOn || showAdd || showReset);
+    if (box.hidden) return;
+    if (!secondaryOn) {
+      box.innerHTML =
+        (showAdd ? `<button class="btn ghost small-btn" data-secondary-ctl="add">+ Add a secondary emotion</button>` : "") +
+        (showReset ? `<button class="btn ghost small-btn" data-reset>Reset</button>` : "");
       return;
     }
     const label = (w) => (state[w].id ? BY_ID[state[w].id].word : "none");
@@ -242,6 +272,7 @@
     if (b) setActive(b.dataset.setActive);
     const ctl = e.target.closest("[data-secondary-ctl]");
     if (ctl) answerSecondary(ctl.dataset.secondaryCtl === "add");
+    if (e.target.closest("[data-reset]")) startOver();
   });
 
   // Yes / add: the wheel can now select a secondary emotion. No / remove: back to just the primary.
@@ -576,16 +607,18 @@
       return;
     }
     if (e.target.id === "copy") copyText(fullText());
-    if (e.target.id === "start-over") {
-      const typed = state.primary.action.trim() || state.secondary.action.trim();
-      if (typed && !confirm("Clear everything and start over?")) return;
-      resetState();
-      showActiveOnWheel(); // clears the highlight and unlocks the wheel
-      wheel.reset();
-      renderPanel();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (e.target.id === "start-over") startOver();
   });
+
+  function startOver() {
+    const typed = state.primary.action.trim() || state.secondary.action.trim();
+    if (typed && !confirm("Clear everything and start over?")) return;
+    resetState();
+    showActiveOnWheel(); // clears the highlight, unlocks the wheel, shows the search bar again
+    wheel.reset();
+    renderPanel();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function copyText(text) {
     try {
