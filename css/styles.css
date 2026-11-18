@@ -322,3 +322,16 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 .still-stuck { margin-top: 14px !important; }
+
+/* Focus ring follows the emotion's color inside its card */
+.emo :focus-visible, .emo textarea:focus { outline: 3px solid hsl(var(--h) 55% 55%); outline-offset: 2px; }
+
+/* Secondary emotion question */
+.ask p { margin: 0 0 4px; }
+.btn.yes { background: hsl(140 45% 38%); color: #fff; min-width: 90px; }
+.btn.no { background: hsl(2 62% 50%); color: #fff; min-width: 90px; }
+.btn.yes:hover { background: hsl(140 45% 32%); }
+.btn.no:hover { background: hsl(2 62% 44%); }
+.small-btn { padding: 6px 12px; font-size: .85rem; }
+
+.start-over-row { display: flex; justify-content: center; margin: 4px 0 16px; }
