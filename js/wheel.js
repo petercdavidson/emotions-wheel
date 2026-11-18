@@ -73,10 +73,18 @@ function el(name, attrs = {}, parent) {
 }
 
 /**
- * Draw a wheel into `container`. onPick(node) is called when a word is tapped.
- * Returns { setHighlight(ids), focus(id), reset() }.
+ * Draw a wheel into `container`. onPick(node) is called when a word is chosen.
+ * Returns { setHighlight(ids, leaf), focus(id), reset() }.
+ *
+ * Interaction:
+ *  - Mouse: hover enlarges a slice; click selects; drag anywhere spins.
+ *  - Touch: press and slide to preview slices, lift to select;
+ *           press on the outer edge and slide to spin.
  */
 function createWheel(container, { onPick }) {
+  const SPIN_EDGE = R.outer - 30; // on touch, spinning starts from here outward
+  let rot = 0; // current rotation of the wheel, in degrees
+  let anim = null;
   const svg = el("svg", {
     viewBox: `${-R.grip - 4} ${-R.grip - 4} ${2 * R.grip + 8} ${2 * R.grip + 8}`,
     class: "wheel-svg",
@@ -85,10 +93,10 @@ function createWheel(container, { onPick }) {
   });
   const rotor = el("g", { class: "rotor" }, svg);
   const cells = {};
-  const labels = [];
+  const labels = []; // every label that needs to stay upright as the wheel turns
   const hue = Object.fromEntries(WHEEL.map((c) => [c.name, c.hue]));
 
-  // Grip ring: the part you can grab to spin the wheel.
+  // Grip ring: the edge you can grab to spin the wheel.
   const grip = el("g", { class: "grip" }, rotor);
   el("circle", { r: (R.outer + R.grip) / 2, class: "grip-band", "stroke-width": R.grip - R.outer }, grip);
   for (let a = 0; a < 360; a += 5) {
@@ -97,23 +105,31 @@ function createWheel(container, { onPick }) {
     el("line", { x1, y1, x2, y2, class: "grip-tick" }, grip);
   }
 
+  const ringOf = (level) => (level === 0 ? [0, R.core] : level === 1 ? [R.core, R.mid] : [R.mid, R.outer]);
+
+  // A radial label, sized to fit within [r1, r2] and the slice's width.
+  function addLabel(parent, n, r1, r2, a1, a2, maxFont) {
+    const mid = (a1 + a2) / 2;
+    const lr1 = n.level === 0 ? 22 : r1; // keep core labels clear of the very center
+    const [x, y] = pt((lr1 + r2) / 2, mid);
+    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central" }, parent);
+    t.textContent = n.word.toUpperCase();
+    const byLength = (r2 - lr1 - 18) / (n.word.length * 0.66);
+    const byWidth = (lr1 + 14) * ((a2 - a1) * Math.PI / 180) * 0.8;
+    const size = n.level === 0 ? Math.min(maxFont, byLength) : Math.min(maxFont, byLength, byWidth);
+    t.setAttribute("font-size", size.toFixed(1));
+    const L = { t, x: x.toFixed(1), y: y.toFixed(1), mid, flipped: null };
+    labels.push(L);
+    flip(L);
+    return L;
+  }
+
   const order = [...NODES].sort((a, b) => b.level - a.level);
   for (const n of order) {
-    const [r1, r2] = n.level === 0 ? [0, R.core] : n.level === 1 ? [R.core, R.mid] : [R.mid, R.outer];
+    const [r1, r2] = ringOf(n.level);
     const g = el("g", { class: `cell lvl${n.level}`, "data-id": n.id, style: `--h:${hue[n.core]}` }, rotor);
     el("path", { d: sectorPath(r1, r2, n.a1, n.a2) }, g);
-
-    const mid = (n.a1 + n.a2) / 2;
-    const lr1 = n.level === 0 ? 22 : r1; // keep core labels clear of the very center
-    const r = (lr1 + r2) / 2;
-    const [x, y] = pt(r, mid);
-    const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central" }, g);
-    t.textContent = n.word.toUpperCase();
-    const maxLen = r2 - lr1 - 18;
-    const base = [26, 23, 21][n.level];
-    const est = n.word.length * base * 0.66;
-    t.setAttribute("font-size", est > maxLen ? ((base * maxLen) / est).toFixed(1) : base);
-    labels.push({ t, x: x.toFixed(1), y: y.toFixed(1), mid, flipped: null });
+    addLabel(g, n, r1, r2, n.a1, n.a2, [26, 23, 21][n.level]);
     el("title", {}, g).textContent = pathOf(n.id).map((p) => p.word).join(" › ");
     cells[n.id] = g;
   }
@@ -123,22 +139,58 @@ function createWheel(container, { onPick }) {
     el("line", { x1: 0, y1: 0, x2: x, y2: y, class: "divider" }, dividers);
   }
   el("circle", { r: R.outer, class: "rim" }, rotor);
+  // Enlarged copies of slices are drawn on these layers, on top of everything.
+  // They ignore the pointer, so they never get in the way of tapping.
+  const pickLayer = el("g", { class: "pop-layer" }, rotor);
+  const hoverLayer = el("g", { class: "pop-layer" }, rotor);
   container.appendChild(svg);
 
+  // Shows the word under your finger while sliding on a touch screen.
+  const readout = document.createElement("div");
+  readout.className = "readout";
+  readout.hidden = true;
+  container.appendChild(readout);
+
+  // ---- Enlarged slices ----
+  // A slice grows sideways within its own ring. Outer-ring slices also
+  // stick out past the edge of the wheel. Nothing crosses into another ring.
+  function drawPop(layer, n, big) {
+    for (const L of [...labels]) if (layer.contains(L.t)) labels.splice(labels.indexOf(L), 1);
+    layer.replaceChildren();
+    if (!n || n.level === 0) return;
+    const w = n.a2 - n.a1;
+    const mid = (n.a1 + n.a2) / 2;
+    const r1 = n.level === 1 ? R.core : R.mid;
+    const narrow = svg.getBoundingClientRect().width < 500; // phones: keep it on screen
+    const r2 = n.level === 1 ? R.mid : big ? R.outer + (narrow ? 60 : 150) : R.outer + 40;
+    const nw = n.level === 1 ? w * (big ? 2 : 1.4) : w * (big ? 2.6 : 1.7);
+    const g = el("g", { class: `pop lvl${n.level} ${big ? "big" : ""}`, style: `--h:${hue[n.core]}` }, layer);
+    el("path", { d: sectorPath(r1, r2, mid - nw / 2, mid + nw / 2) }, g);
+    addLabel(g, n, r1, r2, mid - nw / 2, mid + nw / 2, big ? 46 : 30);
+  }
+  let hovered = null;
+  let picked = null;
+  function setHovered(n) {
+    if (n === hovered) return;
+    hovered = n;
+    drawPop(hoverLayer, n, true);
+    for (const g of Object.values(cells)) g.classList.remove("hover");
+    if (n) cells[n.id].classList.add("hover");
+  }
+
   // ---- Rotation ----
-  let rot = 0;
-  let anim = null;
+  function flip(L) {
+    // Flip based on where the label ends up on screen, so it reads upright.
+    const flipped = norm360(L.mid + rot) > 180;
+    if (flipped === L.flipped) return;
+    L.flipped = flipped;
+    const a = flipped ? L.mid + 90 : L.mid - 90;
+    L.t.setAttribute("transform", `translate(${L.x} ${L.y}) rotate(${a.toFixed(1)})`);
+  }
   function setRot(r) {
     rot = r;
     rotor.setAttribute("transform", `rotate(${rot.toFixed(2)})`);
-    for (const L of labels) {
-      // Flip based on where the label ends up on screen, so it reads upright.
-      const flipped = norm360(L.mid + rot) > 180;
-      if (flipped === L.flipped) continue;
-      L.flipped = flipped;
-      const a = flipped ? L.mid + 90 : L.mid - 90;
-      L.t.setAttribute("transform", `translate(${L.x} ${L.y}) rotate(${a.toFixed(1)})`);
-    }
+    labels.forEach(flip);
   }
   function animateTo(target) {
     cancelAnimationFrame(anim);
@@ -164,27 +216,57 @@ function createWheel(container, { onPick }) {
   }
   setRot(0);
 
-  // ---- Tapping and spinning ----
+  // ---- Finding the slice under the pointer (by geometry) ----
   function local(e) {
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
     return { r: Math.hypot(p.x, p.y), a: (Math.atan2(p.x, -p.y) * 180) / Math.PI };
   }
+  function nodeAt(p) {
+    if (p.r > R.outer) return null;
+    const level = p.r < R.core ? 0 : p.r < R.mid ? 1 : 2;
+    const a = START + norm360(p.a - rot - START);
+    return NODES.find((n) => n.level === level && a >= n.a1 && a < n.a2) || null;
+  }
+
+  // ---- Pointer handling ----
   let down = null;
+  const isMouse = (e) => e.pointerType === "mouse";
+  const showReadout = (n) => {
+    readout.hidden = !n;
+    if (n) readout.textContent = pathOf(n.id).map((x) => x.word).join(" › ");
+  };
+
   svg.addEventListener("pointerdown", (e) => {
     if (e.button > 0) return;
     const p = local(e);
-    const cell = e.target.closest(".cell");
-    down = { id: cell && cell.dataset.id, canSpin: p.r > R.mid, last: p.a, startX: e.clientX, startY: e.clientY, moved: false };
-    if (down.canSpin) svg.setPointerCapture(e.pointerId);
+    const mode = isMouse(e) ? "mouse" : p.r > SPIN_EDGE ? "spin" : "scrub";
+    down = { mode, last: p.a, x: e.clientX, y: e.clientY, moved: false, node: nodeAt(p) };
+    svg.setPointerCapture(e.pointerId);
+    if (mode === "scrub") {
+      setHovered(down.node);
+      showReadout(down.node);
+    }
   });
+
   svg.addEventListener("pointermove", (e) => {
-    if (!down || !down.canSpin) return;
     const p = local(e);
-    if (!down.moved && Math.hypot(e.clientX - down.startX, e.clientY - down.startY) < 6) return;
+    if (!down) {
+      if (isMouse(e)) setHovered(nodeAt(p));
+      return;
+    }
+    if (down.mode === "scrub") {
+      const n = nodeAt(p);
+      setHovered(n);
+      showReadout(n);
+      return;
+    }
+    // mouse or spin: spin once the pointer has moved a little
+    if (!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) return;
     if (!down.moved) {
       down.moved = true;
       cancelAnimationFrame(anim);
       svg.classList.add("spinning");
+      setHovered(null);
     }
     let d = p.a - down.last;
     if (d > 180) d -= 360;
@@ -192,64 +274,40 @@ function createWheel(container, { onPick }) {
     down.last = p.a;
     setRot(rot + d);
   });
-  const end = () => {
-    if (down && !down.moved && down.id) onPick && onPick(BY_ID[down.id]);
+
+  svg.addEventListener("pointerup", (e) => {
+    if (!down) return;
+    let chosen = null;
+    if (down.mode === "scrub") chosen = hovered;
+    else if (!down.moved) chosen = down.node;
+    const wasMouse = down.mode === "mouse";
     down = null;
     svg.classList.remove("spinning");
-  };
-  svg.addEventListener("pointerup", end);
+    showReadout(null);
+    if (!wasMouse) setHovered(null);
+    if (chosen && onPick) onPick(chosen);
+    if (wasMouse) setHovered(nodeAt(local(e)));
+  });
   svg.addEventListener("pointercancel", () => {
     down = null;
     svg.classList.remove("spinning");
+    showReadout(null);
+    setHovered(null);
   });
-  // On touch screens, stop the page from scrolling when you grab the edge to spin.
-  svg.addEventListener(
-    "touchstart",
-    (e) => {
-      const t = e.touches[0];
-      if (t && local(t).r > R.mid) e.preventDefault();
-    },
-    { passive: false }
-  );
-
-  let picked = null;
-  // Pop a slice up larger while the mouse is over it, so small text is readable.
-  // Only one slice is ever popped; it's tracked here rather than with
-  // enter/leave events, which browsers drop when an element is moved.
-  let hovered = null;
-  function setHovered(g) {
-    if (g === hovered) return;
-    if (hovered) {
-      hovered.classList.remove("pop");
-      if (hovered !== picked) lower(hovered);
-    }
-    hovered = g;
-    if (g) {
-      g.classList.add("pop");
-      rotor.appendChild(g); // draw on top of its neighbours
-    } else raisePicked();
-  }
-  svg.addEventListener("pointermove", (e) => {
-    if (e.pointerType !== "mouse" || (down && down.moved)) return setHovered(null);
-    setHovered(e.target.closest ? e.target.closest(".cell") : null);
+  svg.addEventListener("pointerleave", (e) => {
+    if (isMouse(e) && !down) setHovered(null);
   });
-  svg.addEventListener("pointerleave", () => setHovered(null));
-  const lower = (g) => rotor.insertBefore(g, dividers); // back under the divider lines
-  function raisePicked() {
-    if (picked) rotor.appendChild(picked);
-  }
+  // Stop the page from scrolling or zooming while a finger is on the wheel.
+  svg.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
 
   return {
     // ids: the selected word and its parents; leaf: the selected word itself (shown larger)
     setHighlight(ids, leaf) {
-      for (const g of Object.values(cells)) g.classList.remove("on", "picked");
+      for (const g of Object.values(cells)) g.classList.remove("on");
       for (const id of ids) cells[id] && cells[id].classList.add("on");
       svg.classList.toggle("has-on", ids.length > 0);
-      if (picked && picked !== hovered) lower(picked);
-      picked = leaf ? cells[leaf] : null;
-      if (picked) picked.classList.add("picked");
-      raisePicked();
-      if (hovered) rotor.appendChild(hovered); // a popped slice stays on top
+      picked = leaf ? BY_ID[leaf] : null;
+      drawPop(pickLayer, picked, false);
     },
     focus,
     reset: () => animateTo(0),

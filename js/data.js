@@ -90,6 +90,7 @@ const WHEEL = [
 //          and are shown only behind an "Ideas" button with a label saying so.
 const NEEDS = {
   Happy: {
+    needsPrefix: "This emotion needs", // reads better than "My body needs to be shared"
     guidance: null,
     ifNot: null,
     ideas: [

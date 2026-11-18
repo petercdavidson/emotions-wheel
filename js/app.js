@@ -20,8 +20,17 @@
     toast._t = setTimeout(() => t.classList.remove("show"), 2400);
   }
 
-  // ---------- Olympian Mode (monochrome) ----------
-  $("#mono").addEventListener("change", (e) => document.documentElement.classList.toggle("mono", e.target.checked));
+  // ---------- Display settings (the only things remembered between visits) ----------
+  for (const [id, key] of [["dark", "ew.dark"], ["mono", "ew.mono"]]) {
+    const box = $("#" + id);
+    box.checked = document.documentElement.classList.contains(id);
+    box.addEventListener("change", () => {
+      document.documentElement.classList.toggle(id, box.checked);
+      try {
+        localStorage.setItem(key, box.checked ? "1" : "0");
+      } catch {}
+    });
+  }
 
   // ---------- First: basic needs (pop-up with a short countdown) ----------
   $("#basics").innerHTML = BASICS.map(
@@ -129,6 +138,12 @@
 
   function pick(id, which) {
     which = which || whichForWheel();
+    // A new center emotion for the main emotion starts the "can't give" part over.
+    const prev = state[which].id;
+    if (which === "primary" && prev && BY_ID[prev].core !== BY_ID[id].core && state.cantGive) {
+      state.cantGive = false;
+      state.secondary = { id: null, action: "" };
+    }
     state[which].id = id;
     state.active = which;
     showActiveOnWheel();
@@ -221,6 +236,7 @@
       feeling: n.word.toLowerCase(),
       connected: n.level > 0 ? ROOT_NOUN[n.core] : null, // redundant for a center emotion
       body: CORE[n.core].wants,
+      needsPrefix: NEEDS[n.core].needsPrefix || "My body needs",
     };
   }
 
@@ -229,11 +245,9 @@
     const p = parts(s.id);
     let t = `I'm feeling ${p.feeling}.`;
     if (p.connected) t += ` This is connected to ${p.connected}.`;
-    t += ` My body needs ${p.body}.`;
-    if (withAction) {
-      const a = s.action.trim();
-      t += " " + (a ? (a[0].toUpperCase() + a.slice(1)).replace(/([^.!?])$/, "$1.") : "___.");
-    }
+    t += ` ${p.needsPrefix} ${p.body}.`;
+    const a = withAction ? s.action.trim() : "";
+    if (a) t += " " + (a[0].toUpperCase() + a.slice(1)).replace(/([^.!?])$/, "$1.");
     return t;
   }
 
@@ -288,7 +302,7 @@
         <h3>Complete the whole thought</h3>
         <p class="given">I'm feeling <strong>${esc(p.feeling)}</strong>.</p>
         ${p.connected ? `<p class="given">This is connected to <strong>${esc(p.connected)}</strong>.</p>` : ""}
-        <p class="needs">My body needs <strong>${esc(p.body)}</strong>.</p>
+        <p class="needs">${esc(p.needsPrefix)} <strong>${esc(p.body)}</strong>.</p>
         ${need.guidance ? `<p class="guidance">${esc(need.guidance)}</p>` : ""}
         ${
           showAction
@@ -317,7 +331,7 @@
     return `
     <section class="card leftover">
       <h3>What's left?</h3>
-      <p>If you can't give it what it wants, is there a secondary emotion you're feeling that you can tend to as well?</p>
+      <p>If you can't give the emotion what it wants, is there a secondary emotion you're feeling that you can tend to as well?</p>
       ${need.ifNot ? `<p class="guidance">${esc(need.ifNot)}</p>` : ""}
       ${
         state.secondary.id
@@ -344,7 +358,7 @@
           <button class="btn primary" id="copy">Copy</button>
           <button class="btn ghost" id="start-over">Start over</button>
         </div>
-        <p class="muted small">Say it out loud. Say it out loud into a mirror.</p>
+        <p class="muted small">Say it out loud, into a mirror if you can.</p>
       </section>`;
     $("#full-text").textContent = fullText();
     renderChoosing();
