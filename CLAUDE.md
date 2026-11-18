@@ -41,8 +41,8 @@ Don't add other storage without asking. Update the footer and README if this lis
   are toggles at the bottom.
 - **Olympian Mode:** no color anywhere (including the opening check and the browser bar).
   Pure white page, black ink, an unshaded black-and-white wheel like the printed original.
-  Wheel selections and buttons are white text on black; light grays only for accents in
-  panels and blocks. With Dark mode too, it inverts (black page, black text on white).
+  Wheel selections and buttons are white text on black, except the optional buttons above
+  the wheel, which stay black on white; light grays only for accents in panels and blocks. With Dark mode too, it inverts (black page, black text on white).
   Defined with explicit CSS variables under `:root.mono`, not a grayscale filter.
 - **Wheel text:** every word is the same size and weight, measured so the longest fits, and
   inner-aligned, flipping to stay upright as the wheel turns. Hovering, or sliding a finger,
@@ -77,6 +77,10 @@ Don't add other storage without asking. Update the footer and README if this lis
   the layout. On a phone scrolled past the top of the wheel, `beforeChange()` also keeps the
   wheel still on screen if something above it appears or disappears (iOS Safari has no
   scroll anchoring); scroll the page only in a microtask queued after it.
+- **Steady page while the wheel turns:** iOS Safari would anchor its scroll position to the
+  turning wheel and bounce the page. The wheel has `overflow-anchor: none`, and while it
+  turns on its own (`animateTo`, `coast` in `js/wheel.js`) the page's scroll position is
+  held, until a touch, mouse wheel or key press shows the user is scrolling.
 - **Search:** custom suggestions that match anywhere in a word, list words that start with
   the typed text first, and show where each word sits on the wheel. The list stays open while
   there's text, and × or Esc clears it.

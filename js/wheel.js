@@ -211,6 +211,28 @@ function createWheel(container, { onPick }) {
   }
   let locked = false; // when true, the wheel resists spinning and springs back
   let home = 0; // where the wheel rests when locked
+  // While the wheel turns on its own, keep the page still. (iOS Safari can otherwise latch
+  // its scroll position onto a word on the turning wheel and bounce the page along with it.)
+  // Any scrolling of your own takes over straight away.
+  let hold = null;
+  function holdScroll() {
+    hold = { y: null };
+  }
+  function keepScroll() {
+    if (!hold) return;
+    if (hold.y === null) hold.y = window.scrollY;
+    else if (window.scrollY !== hold.y) window.scrollTo(window.scrollX, hold.y);
+  }
+  function releaseScroll() {
+    requestAnimationFrame(() => {
+      keepScroll();
+      hold = null;
+    });
+  }
+  window.addEventListener("scroll", keepScroll, { passive: true });
+  for (const type of ["touchstart", "wheel", "keydown", "mousedown"])
+    window.addEventListener(type, () => (hold = null), { passive: true, capture: true });
+
   function animateTo(target, bounce) {
     cancelAnimationFrame(anim);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -218,13 +240,16 @@ function createWheel(container, { onPick }) {
     const dur = Math.min(900, 300 + Math.abs(target - from) * 2.5);
     if (reduce || Math.abs(target - from) < 0.1) return setRot(target);
     const t0 = performance.now();
+    holdScroll();
     const step = (now) => {
       const p = Math.min(1, (now - t0) / dur);
       const e = bounce
         ? 1 + 2.7 * Math.pow(p - 1, 3) + 1.7 * Math.pow(p - 1, 2) // overshoot a little, then settle
         : p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       setRot(from + (target - from) * e);
+      keepScroll();
       if (p < 1) anim = requestAnimationFrame(step);
+      else releaseScroll();
     };
     anim = requestAnimationFrame(step);
   }
@@ -243,9 +268,12 @@ function createWheel(container, { onPick }) {
       last = now;
       setRot(rot + v * dt);
       v *= Math.exp(-dt / 450); // friction
+      keepScroll();
       if (Math.abs(v) > 0.01) anim = requestAnimationFrame(step);
+      else releaseScroll();
     };
     cancelAnimationFrame(anim);
+    holdScroll();
     anim = requestAnimationFrame(step);
   }
 

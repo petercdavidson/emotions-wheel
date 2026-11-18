@@ -102,6 +102,9 @@
 .mono .sentence { background: var(--tint); border-left-color: var(--tint-edge); }
 .mono .list-core { border-left-color: var(--tint-edge); }
 .mono .btn.ghost, .mono .btn.yes, .mono .btn.no { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+/* Optional controls above the wheel stay quiet: black on white */
+:root.mono:not(.dark) .choosing .btn.ghost { background: var(--surface); color: var(--ink); border-color: #bdbdbd; }
+:root.mono:not(.dark) .choosing .btn.ghost:hover { background: var(--tint); border-color: var(--tint-edge); }
 .mono .btn.ghost:hover, .mono .btn.yes:hover, .mono .btn.no:hover, .mono .btn.primary:hover { background: var(--muted); border-color: var(--muted); }
 /* The opening check's animations, without color */
 .mono .zzz, .mono .rumble { color: var(--ink); }
@@ -254,7 +257,7 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .wheel { width: 100%; max-width: 640px; margin: 0 auto; }
 .wheel-svg { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 
-.wheel { position: relative; }
+.wheel { position: relative; overflow-anchor: none; } /* never let the browser anchor scrolling to the turning wheel */
 .wheel-svg { overflow: visible; touch-action: manipulation; } /* scrolling is blocked in JS where needed */
 .cell { cursor: pointer; }
 .pop-layer { pointer-events: none; }
