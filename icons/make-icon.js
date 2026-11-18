@@ -25,6 +25,14 @@ function wheel(R) {
   const ink = '#1a1a1a', sw = R * 0.035;
   s += `<circle r="${R * 0.36}" fill="none" stroke="${ink}" stroke-width="${sw * 0.7}"/>`;
   s += `<circle r="${R * 0.68}" fill="none" stroke="${ink}" stroke-width="${sw * 0.7}"/>`;
+  // Subdivisions: more sections the further out you go, like the real wheel
+  // (middle ring every 20 degrees, outer ring every 10). All slice edges fall on these.
+  for (let d = -40; d < 320; d += 10) {
+    if (lines.includes(d)) continue;
+    const r1 = (d + 40) % 20 === 0 ? R * 0.36 : R * 0.68;
+    const [x1, y1] = pt(r1, d), [x2, y2] = pt(R, d);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ink}" stroke-width="${sw * 0.45}"/>`;
+  }
   for (const d of lines) { const [x, y] = pt(R, d); s += `<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="${ink}" stroke-width="${sw}" stroke-linecap="round"/>`; }
   s += `<circle r="${R}" fill="none" stroke="${ink}" stroke-width="${sw * 1.4}"/>`;
   return s;
