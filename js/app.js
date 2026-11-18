@@ -35,7 +35,9 @@
   // ---------- First: basic needs (pop-up with a short countdown) ----------
   $("#basics").innerHTML = BASICS.map(
     (b) => `<li><button type="button" class="basic" data-fx="${b.toLowerCase()}">
-      <span class="basic-label">${esc(b)}?</span></button></li>`
+      <span class="basic-label">${
+        b === "Thirsty" ? [...`${b}?`].map((ch, i) => `<span class="ch" style="--i:${i}">${esc(ch)}</span>`).join("") : `${esc(b)}?`
+      }</span></button></li>`
   ).join("");
 
   // Just for fun while the countdown runs. Nothing is selected or recorded.
@@ -53,6 +55,8 @@
     btn.classList.remove(cls);
     void btn.offsetWidth; // let the animation play again
     btn.classList.add(cls);
+    clearTimeout(btn._fxDone);
+    btn._fxDone = setTimeout(() => btn.classList.remove(cls), 2000); // tidy up once it's played
   }
   const EFFECTS = {
     tired(btn) {
@@ -356,7 +360,7 @@
       ${emotionCard("primary")}
       ${state.cantGive ? leftoverCard() : ""}
       ${state.cantGive && state.secondary.id ? emotionCard("secondary") : ""}
-      <section class="card copy">
+      <section class="card copy" style="--h:${CORE[BY_ID[state.primary.id].core].hue}">
         <h3>Your whole thought</h3>
         <blockquote class="sentence" id="full-text"></blockquote>
         <div class="btn-row">

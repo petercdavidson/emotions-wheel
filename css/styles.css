@@ -138,18 +138,18 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 @keyframes rumbleL { 0% { transform: translate(6px, -50%); opacity: 1; } 100% { transform: translate(-16px, -50%); opacity: 0; } }
 @keyframes rumbleR { 0% { transform: translate(-6px, -50%); opacity: 1; } 100% { transform: translate(16px, -50%); opacity: 0; } }
 
-/* Thirsty: dries out in the heat. Sandy color, and the whole box shimmers, blurry and wavy */
-.fx-thirsty { animation: parched 1.8s ease-in-out, shimmer-blur 1.8s ease-in-out; }
+/* Thirsty: dries out in the heat. Sandy color, a slight blur, and a smooth wave rolls through the letters */
+.fx-thirsty { animation: parched 1.2s ease-in-out; }
 @keyframes parched {
-  0%,100% { background: var(--bg); }
-  20%,70% { background: hsl(42 48% 82%); border-color: hsl(40 35% 66%); }
+  0%,100% { background: var(--bg); filter: none; }
+  25%,70% { background: hsl(42 48% 82%); border-color: hsl(40 35% 66%); filter: blur(.9px); }
 }
-@keyframes shimmer-blur { 0%,100% { filter: none; } 25%,65% { filter: blur(1.2px); } }
-.fx-thirsty .basic-label { animation: heatwave .24s ease-in-out 7 alternate; filter: url(#heat-haze); }
-@keyframes heatwave {
-  0% { transform: skewX(-5deg) scaleY(1.04) translateY(-1px); }
-  50% { transform: skewX(0) scaleY(.97) translateY(1px); }
-  100% { transform: skewX(5deg) scaleY(1.04) translateY(-1px); }
+.ch { display: inline-block; }
+.fx-thirsty .ch { animation: haze .4s ease-in-out 3; animation-delay: calc(var(--i) * -.06s); }
+@keyframes haze {
+  0%,100% { transform: translateY(0) skewX(0); }
+  25% { transform: translateY(-2px) skewX(-6deg); }
+  75% { transform: translateY(2px) skewX(6deg); }
 }
 
 /* Triggered: goes red, shakes, and gets a cartoon anger mark */
@@ -294,8 +294,10 @@ main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 
 .copy h3 { margin: 0 0 4px; }
 .sentence {
-  margin: 10px 0; padding: 12px 16px; border-left: 4px solid var(--accent); white-space: pre-line;
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border-radius: 0 10px 10px 0;
+  margin: 10px 0; padding: 12px 16px; white-space: pre-line; border-radius: 0 10px 10px 0;
+  /* the main emotion's color */
+  border-left: 5px solid hsl(var(--h, 215) 50% 55%);
+  background: hsl(var(--h, 215) 55% 50% / .14);
 }
 
 /* ---------- Folds ---------- */
