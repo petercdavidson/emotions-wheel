@@ -20,6 +20,8 @@
       var c = document.documentElement.classList;
       document.querySelector('meta[name="theme-color"]').content =
         c.contains("mono") ? (c.contains("dark") ? "#000000" : "#ffffff") : c.contains("dark") ? "#1b1a18" : "#f7f4ec";
+      // Drop any leftover "#..." from the address (old bookmarks from the tabbed first version).
+      if (location.hash) history.replaceState(null, "", location.pathname + location.search);
       // Skip the opening check if it was acknowledged in the last 15 minutes.
       if (Date.now() - Number(localStorage.getItem("ew.checked") || 0) < 15 * 60 * 1000)
         document.documentElement.classList.add("checked");
@@ -83,6 +85,7 @@
       </div>
       <p>Nothing you type here is saved or sent anywhere. Closing or reloading the page clears it.</p>
       <p>Not a crisis tool. In a crisis in the US, call or text 988.</p>
+      <p class="version">v1.3</p>
     </footer>
   </div>
 

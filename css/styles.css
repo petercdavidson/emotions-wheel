@@ -143,6 +143,7 @@ body {
 main { max-width: 1140px; margin: 0 auto; padding: 16px 16px 32px; }
 .site-footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 0 16px 28px; }
 .site-footer p { margin: 4px 0; }
+.site-footer .version { margin-top: 14px; font-size: .75rem; opacity: .8; }
 
 .card {
   background: var(--surface); border: 1px solid var(--soft-line);

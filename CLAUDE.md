@@ -103,6 +103,7 @@ js/wheel.js            wheel drawing, hit-testing by geometry, rotation, enlarge
 js/app.js              opening check, state, panel, search, whole thought, smooth transitions
 icons/                 site icons; make-icon.js draws the SVGs, and the PNGs are rendered from them
 manifest.webmanifest   "Add to Home Screen" name and icons
+CHANGELOG.md           what changed in each version (the version is shown in the footer)
 ```
 
 ## Workflow
@@ -112,7 +113,10 @@ manifest.webmanifest   "Add to Home Screen" name and icons
    and phone sizes, and check for console errors. Stop the server when done.
 3. Push the branch and give the owner a preview link pinned to the exact commit:
    `https://raw.githack.com/petercdavidson/emotions-wheel/<commit-sha>/index.html`
-4. Update `main` (a fast-forward push) **only after the owner approves**. GitHub Pages
+4. Before `main` is updated, bump the version at the bottom of `index.html` and add an
+   entry to `CHANGELOG.md`: the second number for a normal round of changes (v1.3 to v1.4),
+   the first number only when the owner asks.
+5. Update `main` (a fast-forward push) **only after the owner approves**. GitHub Pages
    publishes it within a minute or two.
 
 Small, descriptive commits are fine, with no pull requests needed. Keep test scripts and
