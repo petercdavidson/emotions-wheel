@@ -251,6 +251,7 @@ function createWheel(container, { onPick }) {
 
   // ---- Pointer handling ----
   let down = null;
+  let hasSelection = false;
   const isMouse = (e) => e.pointerType === "mouse";
   const showReadout = (n) => {
     readout.hidden = !n;
@@ -263,6 +264,9 @@ function createWheel(container, { onPick }) {
   svg.addEventListener("pointerdown", (e) => {
     if (e.button > 0) return;
     const p = local(e);
+    // On touch, the edge spins the wheel, but only while nothing is selected.
+    // With a selection, a touch on the edge is left alone so the page can scroll.
+    if (!isMouse(e) && p.r > SPIN_EDGE && hasSelection) return;
     const mode = isMouse(e) ? "mouse" : p.r > SPIN_EDGE ? "spin" : "scrub";
     down = { mode, last: p.a, x: e.clientX, y: e.clientY, moved: false, node: nodeAt(p) };
     svg.setPointerCapture(e.pointerId);
@@ -328,7 +332,16 @@ function createWheel(container, { onPick }) {
     if (isMouse(e) && !down) setHovered(null);
   });
   // Stop the page from scrolling or zooming while a finger is on the wheel.
-  svg.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  // (Except on the edge while something is selected, so the page can still scroll from there.)
+  svg.addEventListener(
+    "touchstart",
+    (e) => {
+      const t = e.touches[0];
+      if (t && hasSelection && local(t).r > SPIN_EDGE) return;
+      e.preventDefault();
+    },
+    { passive: false }
+  );
 
   return {
     // ids: the selected word and its parents; leaf: the selected word itself (shown larger)
@@ -336,6 +349,7 @@ function createWheel(container, { onPick }) {
       for (const g of Object.values(cells)) g.classList.remove("on");
       for (const id of ids) cells[id] && cells[id].classList.add("on");
       svg.classList.toggle("has-on", ids.length > 0);
+      hasSelection = ids.length > 0;
       picked = leaf ? BY_ID[leaf] : null;
       // Only outer-ring selections stay enlarged; inner ones go back to normal size.
       drawPop(pickLayer, picked && picked.level === 2 ? picked : null, PICK_SCALE);

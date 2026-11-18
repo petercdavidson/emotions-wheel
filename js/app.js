@@ -70,7 +70,6 @@
     },
     thirsty(btn) {
       restart(btn, "fx-thirsty");
-      [38, 62].forEach((left, i) => spawn(btn, "heat", "", { left: `${left}%`, animationDelay: `${0.2 + i * 0.25}s` }));
     },
     triggered(btn) {
       restart(btn, "fx-triggered");
@@ -165,7 +164,9 @@
     // Once an outer-ring word is chosen, the wheel stays put.
     const lockedIn = !!id && BY_ID[id].level === 2;
     wheel.setLocked(lockedIn);
-    $("#spin-hint").hidden = lockedIn;
+    // On touch screens the wheel only spins while nothing is selected.
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    $("#spin-hint").hidden = lockedIn || (touch && !!id);
     renderChoosing();
   }
 
